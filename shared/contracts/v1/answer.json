@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Answer",
+  "description": "Schema for answer data structure",
+  "type": "object",
+  "required": ["id", "cluster_id", "text", "created_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique answer identifier"
+    },
+    "cluster_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Cluster identifier"
+    },
+    "comment_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Optional specific comment being answered"
+    },
+    "text": {
+      "type": "string",
+      "description": "Answer text content"
+    },
+    "youtube_comment_id": {
+      "type": ["string", "null"],
+      "description": "YouTube comment ID if posted"
+    },
+    "is_posted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether answer has been posted"
+    },
+    "posted_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Posting timestamp"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Record creation timestamp"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Record update timestamp"
+    }
+  }
+}

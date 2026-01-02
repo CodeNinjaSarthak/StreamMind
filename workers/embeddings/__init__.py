@@ -1,0 +1,2 @@
+"""Embeddings worker package."""
+

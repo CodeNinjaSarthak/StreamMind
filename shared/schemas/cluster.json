@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Cluster",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "session_id": {
+      "type": "integer"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "similarity_threshold": {
+      "type": "number"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": ["session_id", "title", "similarity_threshold"]
+}
+

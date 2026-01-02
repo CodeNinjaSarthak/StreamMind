@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Comment",
+  "description": "Schema for comment data structure",
+  "type": "object",
+  "required": ["id", "session_id", "youtube_comment_id", "author_name", "text", "created_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique comment identifier"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Session identifier"
+    },
+    "cluster_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Optional cluster identifier"
+    },
+    "youtube_comment_id": {
+      "type": "string",
+      "description": "YouTube comment identifier"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Comment author name"
+    },
+    "author_channel_id": {
+      "type": ["string", "null"],
+      "description": "Optional author channel ID"
+    },
+    "text": {
+      "type": "string",
+      "description": "Comment text content"
+    },
+    "is_question": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether comment is classified as question"
+    },
+    "is_answered": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether comment has been answered"
+    },
+    "confidence_score": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Classification confidence score"
+    },
+    "published_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Comment publication timestamp"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Record creation timestamp"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Record update timestamp"
+    }
+  }
+}

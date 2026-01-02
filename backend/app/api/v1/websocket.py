@@ -1,0 +1,77 @@
+"""WebSocket API routes."""
+
+import json
+import logging
+from typing import Optional
+
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+
+from backend.app.services.websocket.events import event_service
+from backend.app.services.websocket.manager import manager
+
+router = APIRouter(tags=["websocket"])
+logger = logging.getLogger(__name__)
+
+
+@router.websocket("/ws/{session_id}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    session_id: str,
+    connection_id: Optional[str] = Query(None)
+) -> None:
+    """WebSocket endpoint for real-time updates.
+
+    Args:
+        websocket: WebSocket connection.
+        session_id: Session ID (UUID string).
+        connection_id: Optional connection ID for reconnection.
+    """
+    conn_id = None
+    try:
+        conn_id = await manager.connect(session_id, websocket, connection_id)
+
+        await websocket.send_json(
+            event_service.create_connected_event(conn_id, session_id)
+        )
+
+        while True:
+            data = await websocket.receive_text()
+
+            try:
+                message = json.loads(data)
+                msg_type = message.get("type")
+
+                if msg_type == "pong":
+                    logger.debug(f"Received pong from {conn_id}")
+                    continue
+
+                elif msg_type == "ping":
+                    await websocket.send_json({"type": "pong"})
+                    continue
+
+                else:
+                    logger.info(f"Received message: {msg_type} from {conn_id}")
+                    await websocket.send_json({
+                        "type": "ack",
+                        "message": "Message received"
+                    })
+
+            except json.JSONDecodeError:
+                logger.error(f"Invalid JSON from {conn_id}")
+                await websocket.send_json(
+                    event_service.create_error_event(
+                        "Invalid JSON format",
+                        error_code="INVALID_JSON"
+                    )
+                )
+
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket disconnected: {conn_id}")
+        if conn_id:
+            manager.disconnect(session_id, conn_id)
+
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        if conn_id:
+            manager.disconnect(session_id, conn_id)
+

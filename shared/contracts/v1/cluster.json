@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Cluster",
+  "description": "Schema for cluster data structure",
+  "type": "object",
+  "required": ["id", "session_id", "title", "similarity_threshold", "created_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique cluster identifier"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Session identifier"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Cluster title"
+    },
+    "description": {
+      "type": ["string", "null"],
+      "description": "Optional cluster description"
+    },
+    "similarity_threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.8,
+      "description": "Similarity threshold for clustering"
+    },
+    "comment_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Number of comments in cluster"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Record creation timestamp"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Record update timestamp"
+    }
+  }
+}

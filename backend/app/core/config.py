@@ -1,0 +1,136 @@
+"""Application configuration using Pydantic settings."""
+
+import os
+from functools import lru_cache
+from typing import Literal, Optional
+
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+
+    # Environment
+    environment: Literal["development", "staging", "production"] = Field(
+        default="development",
+        description="Runtime environment"
+    )
+
+    # Application metadata
+    app_name: str = "AI Live Doubt Manager"
+    app_version: str = "1.0.0"
+    debug: bool = False
+
+    # Database
+    database_url: str = Field(
+        default="postgresql://user:pass@localhost:5432/ai_doubt_manager",
+        description="PostgreSQL database URL"
+    )
+    database_echo: bool = False
+    database_pool_size: int = 5
+    database_max_overflow: int = 10
+    database_pool_recycle: int = 3600
+    database_pool_pre_ping: bool = True
+
+    # Redis
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis connection URL"
+    )
+    redis_max_connections: int = 10
+    redis_decode_responses: bool = True
+
+    # Security
+    secret_key: str = Field(
+        default="change-me-in-production",
+        description="Secret key for JWT encoding"
+    )
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
+    password_bcrypt_rounds: int = 12
+
+    # API
+    api_v1_prefix: str = "/api/v1"
+    cors_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8000"],
+        description="Allowed CORS origins"
+    )
+
+    # YouTube API
+    youtube_client_id: Optional[str] = None
+    youtube_client_secret: Optional[str] = None
+    youtube_redirect_uri: Optional[str] = None
+
+    # Rate Limiting
+    rate_limit_per_minute: int = 60
+    rate_limit_burst: int = 10
+
+    # Quota limits
+    default_daily_answer_limit: int = 100
+    default_monthly_session_limit: int = 30
+
+    # Worker queue names
+    queue_comment_ingest: str = "comment_ingest"
+    queue_classification: str = "classification"
+    queue_embedding: str = "embedding"
+    queue_clustering: str = "clustering"
+    queue_answer_generation: str = "answer_generation"
+
+    # Logging
+    log_level: str = "INFO"
+    log_json: bool = False
+
+    # Observability
+    enable_metrics: bool = True
+    metrics_port: int = 9090
+
+    # WebSocket
+    websocket_heartbeat_interval: int = 30
+    websocket_timeout: int = 300
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore"
+    )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from string or list."""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",")]
+        return v
+
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production."""
+        return self.environment == "production"
+
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development."""
+        return self.environment == "development"
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Get cached settings instance.
+
+    Returns:
+        Settings instance loaded from environment.
+    """
+    env = os.getenv("ENVIRONMENT", "development")
+    env_file = f".env.{env}"
+
+    # Try to load environment-specific file, fallback to .env
+    if os.path.exists(env_file):
+        return Settings(_env_file=env_file)
+    return Settings()
+
+
+settings = get_settings()
+

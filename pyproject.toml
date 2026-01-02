@@ -1,0 +1,69 @@
+[tool.black]
+line-length = 119
+target-version = ['py313']
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | migrations
+  | __pycache__
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 119
+skip = ["venv", "migrations", ".venv"]
+multi_line_output = 3
+force_grid_wrap = 2
+known_first_party = ["backend", "workers"]
+
+[tool.ruff]
+line-length = 119
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "migrations",
+    "*.ipynb",
+    "__pycache__",
+]
+per-file-ignores = {
+    "__init__.py": ["E402"],
+}
+
+[tool.flake8]
+max-line-length = 119
+ignore = ["D107", "D212", "E501", "W503", "W605", "D203", "D100"]
+docstring-convention = "all"
+
+[tool.pylint.main]
+disable = [
+    "line-too-long",
+    "trailing-whitespace",
+    "missing-function-docstring",
+    "consider-using-f-string",
+    "import-error",
+    "too-few-public-methods",
+    "redefined-outer-name",
+]
+
+[tool.radon]
+max_complexity = 10
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests", "workers"]
+python_files = ["test_*.py", "*_test.py"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.coverage.run]
+source = ["backend", "workers"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/venv/*",
+]
+

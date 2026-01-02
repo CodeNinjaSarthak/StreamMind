@@ -1,0 +1,7 @@
+redis==5.2.0
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+pydantic==2.9.2
+pydantic-settings==2.5.2
+pgvector==0.2.5
+prometheus-client==0.19.0

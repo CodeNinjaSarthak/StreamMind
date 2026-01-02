@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WebSocketEvent",
+  "description": "Schema for WebSocket event messages",
+  "type": "object",
+  "required": ["type", "timestamp"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "ping",
+        "pong",
+        "connected",
+        "disconnected",
+        "error",
+        "comment_created",
+        "comment_classified",
+        "cluster_created",
+        "cluster_updated",
+        "answer_ready",
+        "answer_posted",
+        "quota_alert",
+        "quota_exceeded",
+        "session_started",
+        "session_ended"
+      ],
+      "description": "Event type"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Event timestamp"
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data payload"
+    },
+    "message": {
+      "type": ["string", "null"],
+      "description": "Optional human-readable message"
+    }
+  }
+}

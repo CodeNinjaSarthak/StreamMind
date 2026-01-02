@@ -1,110 +1,102 @@
+# General
+.DS_Store
+Thumbs.db
+/.idea/
+.vscode/
+*.swp
+*~
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
+env/
+ENV/
+venv/
+.venv/
+venv.bak/
+env.bak/
+pip-wheel-metadata/
+*.egg-info/
 .eggs/
-lib/
-lib64/
+build/
+dist/
+eggs/
 parts/
 sdist/
 var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
 
-# Virtual Environments
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-.venv/
+# Pytest / coverage
+.pytest_cache/
+.mypy_cache/
+.pytype/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+nosetests.xml
+*.cover
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
+# PyInstaller
+*.manifest
+*.spec
 
-# Environment Variables
+# Django/Flask
+local_settings.py
+instance/
+db.sqlite3
+db.sqlite3-journal
+
+# Sphinx
+docs/_build/
+
+# C extensions
+*.so
+
+# Node / frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+.cache/
+.vite/
+.next/
+public/build/
+chrome-extension/dist/
+
+# Env files
 .env
-.env.local
-.env.*.local
-*.env
+.env.*
 
-# Logs
+# Editors
+*.sublime-project
+*.sublime-workspace
+.idea/
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.yml
+docker/*.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*.tfvars
+.terraform.lock.hcl
+
+# Logs, temp, misc
 *.log
 logs/
-*.log.*
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pytest
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# AI/ML specific
-*.pkl
-*.pickle
-*.h5
-*.hdf5
-models/*.pt
-models/*.pth
-*.ckpt
-checkpoints/
-
-# API Keys & Secrets
-secrets/
-*.key
-*.pem
-config/secrets.yaml
-config/secrets.yml
-
-# Temporary files
+*.pid
+*.seed
 tmp/
-temp/
-*.tmp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Grafana
-grafana/data/
-
-# Prometheus
-prometheus/data/
-
-# Local development
-.local/
-local/
-
+*.bak
