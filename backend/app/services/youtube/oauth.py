@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from backend.app.core.config import settings
+from app.core.config import settings
 
 
 class YouTubeOAuthService:

@@ -6,8 +6,8 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from backend.app.core.config import settings
-from backend.app.db.base import Base
+from app.core.config import settings
+from app.db.base import Base
 
 # Create engine with connection pooling
 engine = create_engine(

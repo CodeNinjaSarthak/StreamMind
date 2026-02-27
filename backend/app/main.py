@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.api.v1 import (
+from app.api.v1 import (
     answers,
     auth,
     clusters,
@@ -14,10 +14,10 @@ from backend.app.api.v1 import (
     websocket,
     youtube,
 )
-from backend.app.core.config import settings
-from backend.app.core.logging import setup_logging
-from backend.app.core.metrics import metrics_endpoint
-from backend.app.core.middleware import RequestContextMiddleware
+from app.core.config import settings
+from app.core.logging import setup_logging
+from app.core.metrics import metrics_endpoint
+from app.core.middleware import RequestContextMiddleware
 
 setup_logging()
 logger = logging.getLogger(__name__)

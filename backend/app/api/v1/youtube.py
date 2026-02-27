@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from backend.app.schemas.youtube import YouTubeAuthRequest, YouTubeAuthResponse
+from app.schemas.youtube import YouTubeAuthRequest, YouTubeAuthResponse
 
 router = APIRouter(prefix="/youtube", tags=["youtube"])
 

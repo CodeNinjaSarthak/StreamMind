@@ -1,7 +1,8 @@
 """Cluster schemas."""
 
 from datetime import datetime
-from pydantic import BaseModel
+from uuid import UUID
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 
@@ -16,19 +17,22 @@ class ClusterBase(BaseModel):
 class ClusterCreate(ClusterBase):
     """Cluster creation schema."""
 
-    session_id: int
+    session_id: UUID
+
+
+class ClusterUpdate(BaseModel):
+    """Cluster update schema."""
+
+    title: Optional[str] = None
+    description: Optional[str] = None
 
 
 class ClusterResponse(ClusterBase):
     """Cluster response schema."""
 
-    id: int
-    session_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    session_id: UUID
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
-

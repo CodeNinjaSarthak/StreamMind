@@ -7,7 +7,7 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, String, Tex
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from backend.app.db.base import Base
+from app.db.base import Base
 
 
 class StreamingSession(Base):

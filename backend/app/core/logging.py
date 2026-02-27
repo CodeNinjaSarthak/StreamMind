@@ -6,7 +6,7 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from backend.app.core.config import settings
+from app.core.config import settings
 
 
 class JSONFormatter(logging.Formatter):

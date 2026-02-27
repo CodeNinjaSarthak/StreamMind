@@ -1,7 +1,7 @@
 """Quota reset background task."""
 
 from datetime import datetime
-from backend.app.core.logging import get_logger
+from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 

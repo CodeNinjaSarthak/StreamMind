@@ -10,9 +10,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from backend.app.core.config import settings
-from backend.app.db.models.teacher import Teacher
-from backend.app.db.session import get_db
+from app.core.config import settings
+from app.db.models.teacher import Teacher
+from app.db.session import get_db
 
 security_scheme = HTTPBearer()
 

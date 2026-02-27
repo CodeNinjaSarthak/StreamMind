@@ -7,7 +7,7 @@ from sqlalchemy import Column, DateTime, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from pgvector.sqlalchemy import Vector
 
-from backend.app.db.base import Base
+from app.db.base import Base
 
 
 class RAGDocument(Base):
@@ -20,7 +20,7 @@ class RAGDocument(Base):
     content = Column(Text, nullable=False)
     source_type = Column(String(50), nullable=True)
     source_url = Column(String(1000), nullable=True)
-    metadata = Column(JSONB, nullable=True)
+    doc_metadata = Column("metadata", JSONB, nullable=True)
     embedding = Column(Vector(1536), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(

@@ -7,7 +7,7 @@ from cryptography.hazmat.backends import default_backend
 import base64
 import os
 
-from backend.app.core.config import settings
+from app.core.config import settings
 
 
 def get_encryption_key() -> bytes:

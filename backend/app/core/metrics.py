@@ -5,7 +5,7 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from starlette.requests import Request
 from starlette.responses import Response
 
-from backend.app.core.config import settings
+from app.core.config import settings
 
 http_requests_total = Counter(
     "http_requests_total",

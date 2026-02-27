@@ -6,8 +6,8 @@ from typing import Optional
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from backend.app.services.websocket.events import event_service
-from backend.app.services.websocket.manager import manager
+from app.services.websocket.events import event_service
+from app.services.websocket.manager import manager
 
 router = APIRouter(tags=["websocket"])
 logger = logging.getLogger(__name__)

@@ -1,35 +1,65 @@
 """Clustering worker for grouping similar comments."""
 
+import logging
 import os
 import sys
-import logging
+import time
 
-logging.basicConfig(level=logging.INFO)
+# Ensure project root is on sys.path so 'workers' package resolves
+# regardless of whether this file is run as a script or as a module.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from workers.common.queue import QueueManager, QUEUE_CLUSTERING
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
+
+POLL_INTERVAL = 1  # seconds
 
 
 def main() -> None:
     """Main entry point for clustering worker."""
     logger.info("Starting clustering worker...")
-    
-    # Read environment variables
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-    database_url = os.getenv("DATABASE_URL", "postgresql://user:pass@localhost/dbname")
-    
-    logger.info(f"Redis URL: {redis_url}")
-    logger.info(f"Database URL configured")
-    
-    logger.info("Clustering worker started successfully")
-    
-    # TODO: Implement actual worker logic
+    manager = QueueManager()
+    task = None
+
     try:
         while True:
-            # Worker loop placeholder
-            pass
+            try:
+                task = manager.dequeue(QUEUE_CLUSTERING)
+                if task is None:
+                    time.sleep(POLL_INTERVAL)
+                    continue
+
+                logger.info(
+                    "Processing task",
+                    extra={
+                        "task_id": task.get("task_id"),
+                        "session_id": task.get("session_id"),
+                        "comment_count": len(task.get("comment_ids") or []),
+                        "trigger_type": task.get("trigger_type"),
+                    }
+                )
+                # Phase 1: log-and-ack, no AI processing
+                logger.info(
+                    "Task acknowledged (no-op — AI logic is Phase 2)",
+                    extra={"task_id": task.get("task_id")}
+                )
+                task = None
+
+            except Exception as e:
+                logger.error(f"Worker error: {e}", exc_info=True)
+                if task:
+                    manager.retry(QUEUE_CLUSTERING, task)
+                    task = None
+                time.sleep(POLL_INTERVAL)
+
     except KeyboardInterrupt:
-        logger.info("Clustering worker shutting down...")
+        logger.info("Clustering worker shutting down gracefully")
 
 
 if __name__ == "__main__":
     main()
-

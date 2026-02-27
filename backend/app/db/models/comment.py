@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
-from backend.app.db.base import Base
+from app.db.base import Base
 
 
 class Comment(Base):

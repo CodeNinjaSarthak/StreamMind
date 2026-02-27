@@ -5,8 +5,8 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.app.core.config import settings
-from backend.app.core.security import (
+from app.core.config import settings
+from app.core.security import (
     create_access_token,
     create_refresh_token,
     get_current_active_user,
@@ -14,9 +14,9 @@ from backend.app.core.security import (
     verify_password,
     verify_token,
 )
-from backend.app.db.models.teacher import Teacher
-from backend.app.db.session import get_db
-from backend.app.schemas.auth import (
+from app.db.models.teacher import Teacher
+from app.db.session import get_db
+from app.schemas.auth import (
     LoginRequest,
     RefreshTokenRequest,
     RegisterRequest,

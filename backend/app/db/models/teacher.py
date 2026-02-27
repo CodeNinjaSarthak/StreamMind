@@ -7,7 +7,7 @@ from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from backend.app.db.base import Base
+from app.db.base import Base
 
 
 class Teacher(Base):
