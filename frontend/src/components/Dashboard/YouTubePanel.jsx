@@ -1,0 +1,103 @@
+import { useState, useEffect } from 'react';
+import { getYouTubeStatus, getYouTubeAuthURL, disconnectYouTube } from '../../services/api';
+
+export function YouTubePanel({ token }) {
+  const [ytStatus, setYtStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  async function fetchStatus() {
+    try {
+      setLoading(true);
+      const status = await getYouTubeStatus(token);
+      setYtStatus(status);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleConnect() {
+    setActionLoading(true);
+    try {
+      const data = await getYouTubeAuthURL(token);
+      const popup = window.open(data.url, 'youtube_oauth', 'width=600,height=700,noopener');
+
+      window.addEventListener('message', function handler(e) {
+        if (e.origin !== window.location.origin) return;
+        if (e.data?.type === 'youtube_oauth_complete') {
+          popup?.close();
+          fetchStatus();
+          setActionLoading(false);
+        }
+      }, { once: true });
+
+      // Fallback: if popup is closed without completing
+      const pollClosed = setInterval(() => {
+        if (popup && popup.closed) {
+          clearInterval(pollClosed);
+          fetchStatus();
+          setActionLoading(false);
+        }
+      }, 500);
+    } catch (e) {
+      setError(e.message);
+      setActionLoading(false);
+    }
+  }
+
+  async function handleDisconnect() {
+    setActionLoading(true);
+    try {
+      await disconnectYouTube(token);
+      await fetchStatus();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  return (
+    <section className="panel">
+      <h2>YouTube</h2>
+      {loading ? (
+        <p>Loading...</p>
+      ) : error ? (
+        <p className="error-msg">{error}</p>
+      ) : (
+        <>
+          <div className="yt-status-row">
+            <span className={`badge ${ytStatus?.connected ? 'badge-connected' : 'badge-disconnected'}`}>
+              {ytStatus?.connected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
+          {ytStatus?.connected ? (
+            <>
+              {ytStatus.expires_at && (
+                <p className="hint">Token expires: {new Date(ytStatus.expires_at).toLocaleString()}</p>
+              )}
+              <button
+                onClick={handleDisconnect}
+                className="btn btn-danger-sm"
+                disabled={actionLoading}
+              >
+                {actionLoading ? 'Disconnecting...' : 'Disconnect'}
+              </button>
+            </>
+          ) : (
+            <button onClick={handleConnect} className="btn" disabled={actionLoading}>
+              {actionLoading ? 'Connecting...' : 'Connect YouTube'}
+            </button>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
