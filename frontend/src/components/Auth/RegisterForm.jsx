@@ -17,7 +17,7 @@ export function RegisterForm() {
     setLoading(true);
     try {
       await register(email, password, name);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {
