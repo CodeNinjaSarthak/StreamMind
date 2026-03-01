@@ -55,3 +55,20 @@ class TeacherResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+class UpdateProfileRequest(BaseModel):
+    """Only name is editable; email changes require a verification workflow."""
+
+    name: str = Field(..., min_length=1, max_length=255)
+
+    class Config:
+        from_attributes = True
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8)
+
+    class Config:
+        from_attributes = True
+

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getSessions, createSession, endSession } from '../../services/api';
 
-export function SessionList({ token, onSelect, activeSession }) {
+export function SessionList({ token, onSelect, activeSession, titleInputRef }) {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -122,6 +122,7 @@ export function SessionList({ token, onSelect, activeSession }) {
             <label>
               Session Title
               <input
+                ref={titleInputRef}
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}

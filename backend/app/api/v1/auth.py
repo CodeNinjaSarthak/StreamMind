@@ -20,11 +20,13 @@ from app.services.token_blacklist import token_blacklist
 from app.db.models.teacher import Teacher
 from app.db.session import get_db
 from app.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     RefreshTokenRequest,
     RegisterRequest,
     TeacherResponse,
     Token,
+    UpdateProfileRequest,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -174,6 +176,34 @@ async def get_current_teacher(
         Teacher information.
     """
     return current_user
+
+
+@router.patch("/profile", response_model=TeacherResponse)
+async def update_profile(
+    request: UpdateProfileRequest,
+    current_user: Teacher = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Teacher:
+    current_user.name = request.name
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.post("/change-password")
+async def change_password(
+    request: ChangePasswordRequest,
+    current_user: Teacher = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    if not verify_password(request.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+    current_user.hashed_password = hash_password(request.new_password)
+    db.commit()
+    return {"message": "Password changed successfully"}
 
 
 @router.post("/logout")

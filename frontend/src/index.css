@@ -5,6 +5,51 @@
 [hidden] { display: none !important; }
 
 :root {
+  /* Brand */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-success: #22c55e;
+
+  /* Surfaces */
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface-alt: #0f172a;
+  --color-border: #334155;
+  --color-text: #f1f5f9;
+  --color-muted: #94a3b8;
+
+  /* Form focus */
+  --color-input-focus-bg: #1e293b;
+
+  /* Error/danger inline */
+  --color-error-bg: #450a0a;
+  --color-error-border: #991b1b;
+  --color-btn-hover: #0f172a;
+  --color-danger-sm-bg: #1e293b;
+  --color-danger-sm-hover: #0f172a;
+
+  /* Badge variables */
+  --badge-question-bg: #1e3a5f;   --badge-question-color: #93c5fd;
+  --badge-not-question-bg: #1e293b; --badge-not-question-color: #94a3b8;
+  --badge-classifying-bg: #422006;  --badge-classifying-color: #fde68a;
+  --badge-posted-bg: #14532d;       --badge-posted-color: #86efac;
+  --badge-active-bg: #14532d;       --badge-active-color: #86efac;
+  --badge-disconnected-bg: #1e293b; --badge-disconnected-color: #94a3b8;
+  --badge-connected-bg: #1e3a5f;    --badge-connected-color: #93c5fd;
+  --badge-pending-bg: #422006;      --badge-pending-color: #fde68a;
+
+  /* Connection status */
+  --status-connected-bg: #14532d;   --status-connected-color: #86efac;
+  --status-reconnecting-bg: #422006; --status-reconnecting-color: #fde68a;
+  --status-connecting-bg: #1e293b;  --status-connecting-color: #94a3b8;
+
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+[data-theme='light'] {
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
   --color-danger: #dc2626;
@@ -12,10 +57,30 @@
   --color-success: #16a34a;
   --color-bg: #f8fafc;
   --color-surface: #ffffff;
+  --color-surface-alt: #f8fafc;
   --color-border: #e2e8f0;
   --color-text: #1e293b;
   --color-muted: #64748b;
-  --radius: 8px;
+  --color-input-focus-bg: #ffffff;
+  --color-error-bg: #fef2f2;
+  --color-error-border: #fecaca;
+  --color-btn-hover: #f1f5f9;
+  --color-danger-sm-bg: #ffffff;
+  --color-danger-sm-hover: #fef2f2;
+
+  --badge-question-bg: #dbeafe;   --badge-question-color: #1e40af;
+  --badge-not-question-bg: #f1f5f9; --badge-not-question-color: #64748b;
+  --badge-classifying-bg: #fef9c3;  --badge-classifying-color: #92400e;
+  --badge-posted-bg: #dcfce7;       --badge-posted-color: #166534;
+  --badge-active-bg: #dcfce7;       --badge-active-color: #166534;
+  --badge-disconnected-bg: #f1f5f9; --badge-disconnected-color: #64748b;
+  --badge-connected-bg: #dbeafe;    --badge-connected-color: #1e40af;
+  --badge-pending-bg: #fef3c7;      --badge-pending-color: #92400e;
+
+  --status-connected-bg: #dcfce7;   --status-connected-color: #166534;
+  --status-reconnecting-bg: #fef3c7; --status-reconnecting-color: #92400e;
+  --status-connecting-bg: #f1f5f9;  --status-connecting-color: #64748b;
+
   --shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
@@ -92,8 +157,8 @@ body {
 }
 
 .error-msg {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
   color: var(--color-danger);
   border-radius: 4px;
   padding: 8px 12px;
@@ -189,7 +254,7 @@ textarea {
 input:focus, textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: #fff;
+  background: var(--color-input-focus-bg);
 }
 
 textarea { resize: vertical; min-height: 80px; }
@@ -216,7 +281,7 @@ textarea { resize: vertical; min-height: 80px; }
   white-space: nowrap;
 }
 
-.btn:hover { background: #f1f5f9; }
+.btn:hover { background: var(--color-btn-hover); }
 
 .btn-primary {
   background: var(--color-primary);
@@ -239,14 +304,14 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-danger:hover { background: var(--color-danger-hover); }
 
 .btn-danger-sm {
-  background: #fff;
+  background: var(--color-danger-sm-bg);
   color: var(--color-danger);
-  border-color: #fecaca;
+  border-color: var(--color-error-border);
   font-size: 12px;
   padding: 4px 10px;
 }
 
-.btn-danger-sm:hover { background: #fef2f2; }
+.btn-danger-sm:hover { background: var(--color-danger-sm-hover); }
 
 .btn-sm { padding: 5px 10px; font-size: 12px; }
 
@@ -265,14 +330,14 @@ button:disabled { opacity: 0.5; pointer-events: none; }
   white-space: nowrap;
 }
 
-.badge-question { background: #dbeafe; color: #1e40af; }
-.badge-not-question { background: #f1f5f9; color: #64748b; }
-.badge-classifying { background: #fef9c3; color: #92400e; }
-.badge-posted { background: #dcfce7; color: #166534; }
-.badge-active { background: #dcfce7; color: #166534; }
-.badge-disconnected { background: #f1f5f9; color: #64748b; }
-.badge-connected { background: #dbeafe; color: #1e40af; }
-.badge-pending { background: #fef3c7; color: #92400e; }
+.badge-question { background: var(--badge-question-bg); color: var(--badge-question-color); }
+.badge-not-question { background: var(--badge-not-question-bg); color: var(--badge-not-question-color); }
+.badge-classifying { background: var(--badge-classifying-bg); color: var(--badge-classifying-color); }
+.badge-posted { background: var(--badge-posted-bg); color: var(--badge-posted-color); }
+.badge-active { background: var(--badge-active-bg); color: var(--badge-active-color); }
+.badge-disconnected { background: var(--badge-disconnected-bg); color: var(--badge-disconnected-color); }
+.badge-connected { background: var(--badge-connected-bg); color: var(--badge-connected-color); }
+.badge-pending { background: var(--badge-pending-bg); color: var(--badge-pending-color); }
 
 /* ============================================================
    Questions Feed
@@ -293,7 +358,7 @@ button:disabled { opacity: 0.5; pointer-events: none; }
   padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--color-bg);
+  background: var(--color-surface-alt);
   font-size: 13px;
 }
 
@@ -325,7 +390,7 @@ button:disabled { opacity: 0.5; pointer-events: none; }
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 12px;
-  background: var(--color-bg);
+  background: var(--color-surface-alt);
 }
 
 .cluster-header {
@@ -339,7 +404,7 @@ button:disabled { opacity: 0.5; pointer-events: none; }
 .cluster-count { color: var(--color-muted); font-size: 12px; }
 
 .cluster-answer {
-  background: #fff;
+  background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 10px;
@@ -373,7 +438,7 @@ button:disabled { opacity: 0.5; pointer-events: none; }
 }
 
 .metric-card {
-  background: var(--color-bg);
+  background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 10px 12px;
@@ -529,9 +594,9 @@ button:disabled { opacity: 0.5; pointer-events: none; }
    Connection Status
    ============================================================ */
 .connection-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: 500; margin-right: 10px; }
-.connection-status.connected { background: #dcfce7; color: #166534; }
-.connection-status.reconnecting { background: #fef3c7; color: #92400e; }
-.connection-status.connecting { background: #f1f5f9; color: #64748b; }
+.connection-status.connected { background: var(--status-connected-bg); color: var(--status-connected-color); }
+.connection-status.reconnecting { background: var(--status-reconnecting-bg); color: var(--status-reconnecting-color); }
+.connection-status.connecting { background: var(--status-connecting-bg); color: var(--status-connecting-color); }
 
 /* ============================================================
    Modal
@@ -601,6 +666,23 @@ button:disabled { opacity: 0.5; pointer-events: none; }
 .cluster-comment-item:last-child { border-bottom: none; }
 .cluster-comment-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--color-muted); }
 .cluster-answer-box {
-  background: var(--color-background); border-radius: var(--radius);
+  background: var(--color-bg); border-radius: var(--radius);
   padding: 12px; margin-bottom: 12px; border: 1px solid var(--color-border);
 }
+
+/* ============================================================
+   Settings page
+   ============================================================ */
+.settings-layout { max-width: 640px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+.settings-title { font-size: 20px; font-weight: 700; color: var(--color-text); }
+.settings-section h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.settings-back { margin-bottom: 4px; }
+
+/* ============================================================
+   Keyboard shortcuts modal
+   ============================================================ */
+.shortcuts-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; }
+.shortcuts-table td { padding: 6px 8px; font-size: 13px; }
+.shortcuts-table td:first-child { width: 130px; }
+.kbd { display: inline-block; padding: 2px 8px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface-alt); font-family: monospace; font-size: 12px; color: var(--color-text); }

@@ -3,6 +3,7 @@ import {
   login as apiLogin,
   register as apiRegister,
   logout as apiLogout,
+  updateProfile as apiUpdateProfile,
 } from '../services/api';
 
 export const AuthContext = createContext(null);
@@ -39,10 +40,27 @@ export function AuthProvider({ children }) {
     setUserName('');
   }
 
+  async function updateProfile(name) {
+    const updated = await apiUpdateProfile({ name }, token);
+    localStorage.setItem('userName', updated.name);
+    setUserName(updated.name);
+    return updated;
+  }
+
   const displayName = userName || userEmail;
 
   return (
-    <AuthContext.Provider value={{ token, displayName, login, logout, register, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{
+      token,
+      displayName,
+      userEmail,
+      userName,
+      login,
+      logout,
+      register,
+      isAuthenticated: !!token,
+      updateProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   );

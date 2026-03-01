@@ -130,3 +130,13 @@ export const deleteDocument = (documentId, token) =>
 // Clusters
 export const getClusterComments = (clusterId, token) =>
   apiFetch(`/api/v1/clusters/${clusterId}/comments`, {}, token);
+
+// Profile & password
+export const updateProfile = (data, token) =>
+  apiFetch('/api/v1/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }, token);
+
+export const changePassword = (currentPassword, newPassword, token) =>
+  apiFetch('/api/v1/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  }, token);

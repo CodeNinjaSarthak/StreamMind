@@ -5,7 +5,7 @@ import { ClusterDetailsModal } from './ClusterDetailsModal';
 
 const REFETCH_EVENTS = new Set(['cluster_created', 'cluster_updated', 'answer_ready', 'answer_posted']);
 
-export function ClustersPanel({ sessionId, token, wsMessages }) {
+export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef }) {
   const [clusters, setClusters] = useState([]);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -40,6 +40,22 @@ export function ClustersPanel({ sessionId, token, wsMessages }) {
     run();
     return () => { stale = true; };
   }, [sessionId, token]);
+
+  // Wire approveFirstRef so DashboardPage keyboard shortcut can trigger approve
+  useEffect(() => {
+    if (!approveFirstRef) return;
+    approveFirstRef.current = () => {
+      const first = clusters.find(c => {
+        const latest = c.answers?.[c.answers.length - 1];
+        return latest && !latest.is_posted;
+      });
+      if (first) {
+        const latest = first.answers[first.answers.length - 1];
+        handleApprove(latest.id);
+      }
+    };
+    return () => { approveFirstRef.current = null; }; // cleanup on unmount — prevents stale calls
+  }, [clusters, approveFirstRef]);
 
   // WS-triggered refetch — targeted cache invalidation
   useEffect(() => {

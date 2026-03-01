@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { submitManualQuestion } from '../../services/api';
 
-export function ManualInput({ sessionId, token }) {
+export function ManualInput({ sessionId, token, textareaRef }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'success'|'error', text }
@@ -33,6 +33,7 @@ export function ManualInput({ sessionId, token }) {
       <p className="hint">Enter questions (one per line, up to 10).</p>
       <form onSubmit={handleSubmit}>
         <textarea
+          ref={textareaRef}
           value={text}
           onChange={e => setText(e.target.value)}
           rows={5}
