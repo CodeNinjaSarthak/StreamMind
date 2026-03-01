@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from typing import Optional, List
 
 
 class ClusterBase(BaseModel):
@@ -34,5 +34,12 @@ class ClusterResponse(ClusterBase):
 
     id: UUID
     session_id: UUID
+    comment_count: int
+    answers: List["AnswerResponse"] = []
     created_at: datetime
     updated_at: datetime
+
+
+from app.schemas.answer import AnswerResponse  # noqa: E402
+
+ClusterResponse.model_rebuild()

@@ -77,3 +77,32 @@ export const submitManualQuestion = (sessionId, text, token) =>
 
 export const approveAnswer = (answerId, token) =>
   apiFetch(`/api/v1/dashboard/answers/${answerId}/approve`, { method: 'POST' }, token);
+
+// RAG Documents
+// Note: uses raw fetch — apiFetch sets Content-Type: application/json which
+// breaks multipart/form-data boundary. The browser sets the correct header itself.
+export async function uploadDocument(file, token) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch('/api/v1/rag/documents', { method: 'POST', headers, body: formData });
+  if (res.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    window.location.href = '/login';
+    return;
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || body.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export const getDocuments = (token) =>
+  apiFetch('/api/v1/rag/documents', {}, token);
+
+export const deleteDocument = (documentId, token) =>
+  apiFetch(`/api/v1/rag/documents/${documentId}`, { method: 'DELETE' }, token);

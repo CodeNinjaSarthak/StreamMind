@@ -11,7 +11,7 @@ export function ClustersPanel({ sessionId, token, wsMessages }) {
 
   useEffect(() => {
     fetchClusters();
-  }, [sessionId]);
+  }, [sessionId, token]);
 
   async function fetchClusters() {
     try {
@@ -37,9 +37,21 @@ export function ClustersPanel({ sessionId, token, wsMessages }) {
     setApprovingId(answerId);
     try {
       await approveAnswer(answerId, token);
-      await fetchClusters();
+      // Optimistic update: flip is_posted immediately so the badge changes
+      // and the button disappears without waiting for a re-fetch.
+      setClusters(prev =>
+        prev.map(cluster => ({
+          ...cluster,
+          answers: cluster.answers.map(a =>
+            a.id === answerId ? { ...a, is_posted: true } : a
+          ),
+        }))
+      );
+      // Silent background re-fetch to sync canonical server state.
+      const data = await getSessionClusters(sessionId, token);
+      if (data) setClusters(data);
     } catch (e) {
-      // ignore
+      setError(e.message);
     } finally {
       setApprovingId(null);
     }

@@ -14,7 +14,7 @@ export function QuestionsFeed({ sessionId, token, wsMessages }) {
 
   useEffect(() => {
     fetchComments();
-  }, [sessionId]);
+  }, [sessionId, token]);
 
   async function fetchComments() {
     try {

@@ -8,6 +8,7 @@ import { ManualInput } from '../components/Dashboard/ManualInput';
 import { MetricsCards } from '../components/Dashboard/MetricsCards';
 import { QuestionsFeed } from '../components/Dashboard/QuestionsFeed';
 import { ClustersPanel } from '../components/Dashboard/ClustersPanel';
+import { DocumentUpload } from '../components/Dashboard/DocumentUpload';
 
 export function DashboardPage() {
   const { token } = useAuth();
@@ -25,6 +26,7 @@ export function DashboardPage() {
             {activeSession && (
               <ManualInput sessionId={activeSession.id} token={token} />
             )}
+            {activeSession && <DocumentUpload token={token} />}
             <MetricsCards sessionId={activeSession?.id} token={token} wsMessages={wsMessages} />
           </div>
           <div className="right-column">

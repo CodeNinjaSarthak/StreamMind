@@ -5,7 +5,7 @@ from uuid import UUID
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.security import get_current_active_user
 from app.db.session import get_db
@@ -48,6 +48,7 @@ async def list_sessions(
     sessions = (
         db.query(StreamingSession)
         .filter(StreamingSession.teacher_id == current_user.id)
+        .order_by(StreamingSession.created_at.desc())
         .all()
     )
     return sessions
@@ -173,5 +174,10 @@ async def list_session_clusters(
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
-    clusters = db.query(Cluster).filter(Cluster.session_id == session_id).all()
+    clusters = (
+        db.query(Cluster)
+        .options(selectinload(Cluster.answers))
+        .filter(Cluster.session_id == session_id)
+        .all()
+    )
     return clusters

@@ -15,7 +15,7 @@ export function MetricsCards({ sessionId, token, wsMessages }) {
       setStats(null);
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, token]);
 
   async function fetchStats() {
     try {

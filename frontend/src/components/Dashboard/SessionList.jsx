@@ -88,6 +88,9 @@ export function SessionList({ token, onSelect, activeSession }) {
           <button onClick={handleEnd} className="btn btn-danger" disabled={ending}>
             {ending ? 'Ending...' : 'End Session'}
           </button>
+          <button onClick={() => onSelect(null)} className="btn" style={{ marginLeft: 8 }}>
+            Switch Session
+          </button>
         </div>
       ) : (
         <div>
@@ -127,11 +130,13 @@ export function SessionList({ token, onSelect, activeSession }) {
               {sessions.filter(s => !s.is_active).slice(0, 5).map(s => (
                 <div
                   key={s.id}
+                  onClick={() => onSelect(s)}
                   style={{
                     padding: '6px 8px',
                     fontSize: 12,
                     color: 'var(--color-muted)',
                     borderBottom: '1px solid var(--color-border)',
+                    cursor: 'pointer',
                   }}
                 >
                   {s.title}
