@@ -734,3 +734,39 @@ button:disabled { opacity: 0.5; pointer-events: none; }
 .activity-icon { flex-shrink: 0; }
 .activity-text { flex: 1; color: var(--color-text); }
 .activity-time { color: var(--color-muted); white-space: nowrap; flex-shrink: 0; }
+
+/* ============================================================
+   Error Boundary
+   ============================================================ */
+.error-boundary {
+  padding: 2rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius);
+  margin: 2rem;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow);
+}
+
+.error-boundary h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.error-boundary details {
+  margin-bottom: 16px;
+}
+
+.error-boundary summary {
+  cursor: pointer;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.error-boundary pre {
+  margin-top: 8px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  color: var(--color-muted);
+}

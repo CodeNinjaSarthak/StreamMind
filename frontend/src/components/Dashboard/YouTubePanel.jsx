@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getYouTubeStatus, getYouTubeAuthURL, disconnectYouTube } from '../../services/api';
 
 export function YouTubePanel({ token }) {
@@ -6,6 +6,9 @@ export function YouTubePanel({ token }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const pollIntervalRef = useRef(null);
+
+  useEffect(() => () => clearInterval(pollIntervalRef.current), []);
 
   useEffect(() => {
     fetchStatus();
@@ -32,6 +35,8 @@ export function YouTubePanel({ token }) {
       window.addEventListener('message', function handler(e) {
         if (e.origin !== window.location.origin) return;
         if (e.data?.type === 'youtube_oauth_complete') {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
           popup?.close();
           fetchStatus();
           setActionLoading(false);
@@ -39,9 +44,10 @@ export function YouTubePanel({ token }) {
       }, { once: true });
 
       // Fallback: if popup is closed without completing
-      const pollClosed = setInterval(() => {
+      pollIntervalRef.current = setInterval(() => {
         if (popup && popup.closed) {
-          clearInterval(pollClosed);
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
           fetchStatus();
           setActionLoading(false);
         }
