@@ -11,6 +11,7 @@ import { QuestionsFeed } from '../components/Dashboard/QuestionsFeed';
 import { ClustersPanel } from '../components/Dashboard/ClustersPanel';
 import { DocumentUpload } from '../components/Dashboard/DocumentUpload';
 import { AnalyticsPanel } from '../components/Dashboard/AnalyticsPanel';
+import { QuotaBanner } from '../components/Dashboard/QuotaBanner';
 
 export function DashboardPage() {
   const { token } = useAuth();
@@ -37,16 +38,30 @@ export function DashboardPage() {
 
   // Session-scoped event accumulator — survives WS reconnects, resets on session change
   const [sessionEvents, setSessionEvents] = useState([]);
+  const [quotaAlert, setQuotaAlert] = useState(null);
   useEffect(() => { setSessionEvents([]); }, [activeSession?.id]);
+  useEffect(() => { setQuotaAlert(null); }, [activeSession?.id]);
   useEffect(() => {
     if (!wsMessages || wsMessages.length === 0) return;
     const last = wsMessages[wsMessages.length - 1];
-    if (last) setSessionEvents(prev => [...prev.slice(-199), last]);
+    if (!last) return;
+    setSessionEvents(prev => [...prev.slice(-199), last]);
+    if (last.type === 'quota_alert') {
+      setQuotaAlert(prev => (prev === 'critical' ? 'critical' : 'warning'));
+    } else if (last.type === 'quota_exceeded') {
+      setQuotaAlert('critical');
+    }
   }, [wsMessages]);
 
   return (
-    <div>
+    <div className="app-shell">
       <Header connected={connected} reconnecting={reconnecting} activeSession={activeSession} />
+      {quotaAlert && (
+        <QuotaBanner
+          level={quotaAlert}
+          onDismiss={() => setQuotaAlert(null)}
+        />
+      )}
       <main className="app-main">
         <div className="panels-grid">
           <div className="left-column">

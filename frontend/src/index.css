@@ -26,6 +26,8 @@
   /* Error/danger inline */
   --color-error-bg: #450a0a;
   --color-error-border: #991b1b;
+  --color-warning-bg: #422006;
+  --color-warning-border: #713f12;
   --color-btn-hover: #0f172a;
   --color-danger-sm-bg: #1e293b;
   --color-danger-sm-hover: #0f172a;
@@ -44,6 +46,8 @@
   --status-connected-bg: #14532d;   --status-connected-color: #86efac;
   --status-reconnecting-bg: #422006; --status-reconnecting-color: #fde68a;
   --status-connecting-bg: #1e293b;  --status-connecting-color: #94a3b8;
+
+  --color-surface-hover: #273548;
 
   --radius: 8px;
   --shadow: 0 1px 3px rgba(0,0,0,0.4);
@@ -65,6 +69,8 @@
   --color-input-focus-bg: #ffffff;
   --color-error-bg: #fef2f2;
   --color-error-border: #fecaca;
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #fcd34d;
   --color-btn-hover: #f1f5f9;
   --color-danger-sm-bg: #ffffff;
   --color-danger-sm-hover: #fef2f2;
@@ -81,6 +87,8 @@
   --status-connected-bg: #dcfce7;   --status-connected-color: #166534;
   --status-reconnecting-bg: #fef3c7; --status-reconnecting-color: #92400e;
   --status-connecting-bg: #f1f5f9;  --status-connecting-color: #64748b;
+
+  --color-surface-hover: #f1f5f9;
 
   --shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
@@ -191,11 +199,18 @@ body {
 /* ============================================================
    Main Layout
    ============================================================ */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
 .app-main {
   padding: 20px 24px;
   max-width: 1400px;
   margin: 0 auto;
-  height: calc(100vh - var(--header-height));
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -234,9 +249,13 @@ body {
 }
 
 .panel h2 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-muted);
   margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -273,6 +292,15 @@ input:focus, textarea:focus {
   outline: none;
   border-color: var(--color-primary);
   background: var(--color-input-focus-bg);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 textarea { resize: vertical; min-height: 80px; }
@@ -395,7 +423,7 @@ button:disabled { opacity: 0.5; pointer-events: none; }
   scroll-behavior: smooth;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .feed-item {
@@ -407,6 +435,11 @@ button:disabled { opacity: 0.5; pointer-events: none; }
   border-radius: 6px;
   background: var(--color-surface-alt);
   font-size: 13px;
+  transition: background 0.15s;
+  cursor: default;
+}
+.feed-item:hover {
+  background: var(--color-surface-hover);
 }
 
 .feed-item-author {
@@ -428,7 +461,7 @@ button:disabled { opacity: 0.5; pointer-events: none; }
 .clusters-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -436,9 +469,14 @@ button:disabled { opacity: 0.5; pointer-events: none; }
 
 .cluster-card {
   border: 1px solid var(--color-border);
+  border-left: 3px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
   border-radius: 6px;
   padding: 12px;
   background: var(--color-surface-alt);
+  transition: border-left-color 0.15s;
+}
+.cluster-card:hover {
+  border-left-color: var(--color-primary);
 }
 
 .cluster-header {
@@ -482,7 +520,7 @@ button:disabled { opacity: 0.5; pointer-events: none; }
 .metrics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 16px;
 }
 
 .metric-card {
@@ -491,6 +529,10 @@ button:disabled { opacity: 0.5; pointer-events: none; }
   border-radius: 6px;
   padding: 10px 12px;
   text-align: center;
+  transition: background 0.15s;
+}
+.metric-card:hover {
+  background: var(--color-surface-hover);
 }
 
 .metric-value { font-size: 24px; font-weight: 700; color: var(--color-primary); }
@@ -529,6 +571,7 @@ button:disabled { opacity: 0.5; pointer-events: none; }
   .app-main {
     height: auto;
     overflow: visible;
+    flex: none;
   }
   .panels-grid {
     grid-template-columns: 1fr;
@@ -696,7 +739,11 @@ button:disabled { opacity: 0.5; pointer-events: none; }
    ============================================================ */
 .connection-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: 500; margin-right: 10px; }
 .connection-status.connected { background: var(--status-connected-bg); color: var(--status-connected-color); }
-.connection-status.reconnecting { background: var(--status-reconnecting-bg); color: var(--status-reconnecting-color); }
+.connection-status.reconnecting { background: var(--status-reconnecting-bg); color: var(--status-reconnecting-color); animation: status-pulse 1.5s ease-in-out infinite; }
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
 .connection-status.connecting { background: var(--status-connecting-bg); color: var(--status-connecting-color); }
 
 /* ============================================================
@@ -798,7 +845,14 @@ button:disabled { opacity: 0.5; pointer-events: none; }
   color: var(--color-muted); cursor: pointer; font-size: 13px; font-weight: 500;
   transition: background 0.15s, color 0.15s;
 }
-.tab-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.tab-btn.active {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-border);
+  border-bottom: 2px solid var(--color-primary);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding-bottom: 5px;
+}
 .tab-btn:hover:not(.active) { background: var(--color-btn-hover); color: var(--color-text); }
 
 /* ============================================================
@@ -870,4 +924,85 @@ button:disabled { opacity: 0.5; pointer-events: none; }
   font-size: 12px;
   white-space: pre-wrap;
   color: var(--color-muted);
+}
+
+/* ============================================================
+   Quota Banner
+   ============================================================ */
+.quota-banner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.quota-banner-warning {
+  background: var(--color-warning-bg);
+  border-bottom: 1px solid var(--color-warning-border);
+  color: var(--color-text);
+}
+
+.quota-banner-critical {
+  background: var(--color-error-bg);
+  border-bottom: 1px solid var(--color-error-border);
+  color: var(--color-text);
+}
+
+.quota-banner-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.quota-banner-text {
+  flex: 1;
+}
+
+.quota-banner-dismiss {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+/* ============================================================
+   Custom Scrollbars
+   ============================================================ */
+.left-column::-webkit-scrollbar,
+.right-column::-webkit-scrollbar,
+.questions-feed::-webkit-scrollbar,
+.clusters-list::-webkit-scrollbar,
+.analytics-scroll-wrapper::-webkit-scrollbar {
+  width: 4px;
+}
+.left-column::-webkit-scrollbar-track,
+.right-column::-webkit-scrollbar-track,
+.questions-feed::-webkit-scrollbar-track,
+.clusters-list::-webkit-scrollbar-track,
+.analytics-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.left-column::-webkit-scrollbar-thumb,
+.right-column::-webkit-scrollbar-thumb,
+.questions-feed::-webkit-scrollbar-thumb,
+.clusters-list::-webkit-scrollbar-thumb,
+.analytics-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+.left-column::-webkit-scrollbar-thumb:hover,
+.right-column::-webkit-scrollbar-thumb:hover,
+.questions-feed::-webkit-scrollbar-thumb:hover,
+.clusters-list::-webkit-scrollbar-thumb:hover,
+.analytics-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
 }
