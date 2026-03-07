@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { uploadDocument, getDocuments, deleteDocument } from '../../services/api';
 import { showToast } from '../../hooks/useToast';
+import { Skeleton } from '../Skeleton';
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const ALLOWED = ['.pdf', '.docx', '.txt'];
@@ -127,16 +128,20 @@ export function DocumentUpload({ sessionId, token }) {
 
       <div style={{ marginTop: 14 }}>
         {isLoadingInitial ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-            {[1, 2].map(i => (
-              <div key={i} className="skeleton" style={{ height: 32 }} />
-            ))}
+          <div className="skeleton-list">
+            {[1, 2].map(i => <Skeleton key={i} className="sk-doc-row" />)}
           </div>
         ) : docs.length === 0 ? (
           <div className="empty-state">
-            <span className="empty-icon">📄</span>
-            <p>No documents uploaded yet</p>
-            <p className="empty-hint">Upload PDFs to give the AI extra context when answering</p>
+            <span className="empty-state-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>
+              </svg>
+            </span>
+            <p className="empty-state-title">No documents uploaded</p>
+            <p className="empty-state-description">Upload PDFs to give the AI context when answering</p>
           </div>
         ) : (
           <>

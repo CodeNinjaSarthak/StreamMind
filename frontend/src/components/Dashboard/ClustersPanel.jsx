@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { getSessionClusters, approveAnswer, editAnswer, getClusterComments } from '../../services/api';
 import { showToast } from '../../hooks/useToast';
 import { ClusterDetailsModal } from './ClusterDetailsModal';
+import { Skeleton } from '../Skeleton';
 
 const REFETCH_EVENTS = new Set(['cluster_created', 'cluster_updated', 'answer_ready', 'answer_posted']);
 
@@ -162,14 +163,14 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
 
       {isLoadingInitial ? (
         <div className="clusters-list">
-          {[1, 2].map(i => (
+          {[1, 2, 3].map(i => (
             <div key={i} className="cluster-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <div className="skeleton" style={{ width: '60%', height: 16 }} />
-                <div className="skeleton" style={{ width: 60, height: 14 }} />
+              <div className="cluster-header">
+                <Skeleton className="sk-cluster-title" />
+                <Skeleton className="sk-cluster-count" />
               </div>
-              <div className="skeleton" style={{ height: 60, marginBottom: 8 }} />
-              <div className="skeleton" style={{ width: 80, height: 28 }} />
+              <Skeleton className="sk-cluster-body" />
+              <Skeleton className="sk-cluster-btn" />
             </div>
           ))}
         </div>
@@ -179,10 +180,20 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
         <div className="clusters-list">
           {filteredClusters.length === 0 ? (
             <div className="empty-state">
-              <span className="empty-icon">🤖</span>
-              <p>{clusters.length === 0 ? 'No clusters yet' : 'No clusters match this filter'}</p>
+              <span className="empty-state-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
+                  <line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/>
+                  <line x1="5" y1="19" x2="19" y2="19"/>
+                </svg>
+              </span>
+              <p className="empty-state-title">
+                {clusters.length === 0 ? 'No clusters yet' : 'No clusters match this filter'}
+              </p>
               {clusters.length === 0 && (
-                <p className="empty-hint">Questions cluster automatically after 5 similar ones arrive</p>
+                <p className="empty-state-description">
+                  Clusters form automatically once enough questions arrive
+                </p>
               )}
             </div>
           ) : (

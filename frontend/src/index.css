@@ -639,6 +639,37 @@ button:disabled { opacity: 0.5; pointer-events: none; }
 .empty-state p { font-size: 13px; margin-bottom: 4px; }
 .empty-hint { font-size: 12px; }
 
+/* Skeleton layout utilities */
+.skeleton-list { display: flex; flex-direction: column; gap: 8px; }
+.skeleton-row  { display: flex; gap: 8px; align-items: center; }
+
+/* Per-component skeleton sizes */
+.sk-metric-value  { height: 32px; margin-bottom: 6px; }
+.sk-metric-label  { height: 12px; width: 55%; margin: 0 auto; }
+
+.sk-feed-author   { width: 60px; height: 14px; flex-shrink: 0; }
+.sk-feed-text     { flex: 1; height: 14px; }
+.sk-feed-badge    { width: 70px; height: 18px; border-radius: 12px; }
+
+.sk-cluster-title { width: 60%; height: 16px; }
+.sk-cluster-count { width: 60px; height: 14px; }
+.sk-cluster-body  { height: 60px; margin-bottom: 8px; }
+.sk-cluster-btn   { width: 80px; height: 28px; }
+
+.sk-comment-author { width: 64px; height: 14px; flex-shrink: 0; }
+.sk-comment-text   { flex: 1; height: 14px; }
+
+.sk-doc-row          { height: 32px; }
+
+.sk-analytics-value  { height: 28px; margin-bottom: 6px; }
+.sk-analytics-label  { height: 12px; width: 60%; margin: 0 auto; }
+.sk-analytics-chart  { height: 160px; margin-top: 16px; }
+
+/* Structured empty state */
+.empty-state-icon        { display: block; color: var(--color-muted); margin-bottom: 8px; }
+.empty-state-title       { font-size: 14px; font-weight: 600; color: var(--color-text); margin: 0 0 4px; }
+.empty-state-description { font-size: 12px; color: var(--color-muted); margin: 0; }
+
 /* ============================================================
    Skeleton shimmer
    ============================================================ */

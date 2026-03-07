@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getSessionStats } from '../../services/api';
+import { Skeleton } from '../Skeleton';
 
 const REFETCH_EVENTS = new Set(['comment_created', 'cluster_created', 'answer_ready', 'answer_posted', 'comment_classified']);
 
@@ -49,8 +50,8 @@ export function MetricsCards({ sessionId, token, wsMessages }) {
         <div className="metrics-grid">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="metric-card">
-              <div className="skeleton" style={{ height: 32, marginBottom: 6 }} />
-              <div className="skeleton" style={{ height: 12, width: '55%', margin: '0 auto' }} />
+              <Skeleton className="sk-metric-value" />
+              <Skeleton className="sk-metric-label" />
             </div>
           ))}
         </div>

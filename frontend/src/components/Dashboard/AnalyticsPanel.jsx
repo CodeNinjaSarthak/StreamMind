@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { getSessionAnalytics, getSessionClusters, getClusterComments } from '../../services/api';
 import { ActivityLog } from './ActivityLog';
+import { Skeleton } from '../Skeleton';
 
 const ANALYTICS_EVENTS = new Set([
   'comment_created', 'comment_classified',
@@ -140,7 +141,20 @@ export function AnalyticsPanel({ sessionId, token, sessionEvents }) {
     }
   }
 
-  if (loading) return <div className="panel"><p className="empty-msg">Loading analytics...</p></div>;
+  if (loading) return (
+    <div className="panel">
+      <h2>Session Analytics</h2>
+      <div className="analytics-stats">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="analytics-stat">
+            <Skeleton className="sk-analytics-value" />
+            <Skeleton className="sk-analytics-label" />
+          </div>
+        ))}
+      </div>
+      <Skeleton className="sk-analytics-chart" />
+    </div>
+  );
   if (error) return <div className="panel"><p className="error-msg">{error}</p></div>;
 
   // Derive cumulative line chart data
@@ -215,7 +229,16 @@ export function AnalyticsPanel({ sessionId, token, sessionEvents }) {
             </div>
           </>
         ) : (
-          <p className="empty-msg" style={{ marginBottom: 16 }}>No time data yet.</p>
+          <div className="empty-state" style={{ marginBottom: 16 }}>
+            <span className="empty-state-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+              </svg>
+            </span>
+            <p className="empty-state-title">No data yet</p>
+            <p className="empty-state-description">Analytics will appear once questions start coming in</p>
+          </div>
         )}
 
         {data.top_clusters.length > 0 && (
