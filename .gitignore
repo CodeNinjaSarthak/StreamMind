@@ -69,6 +69,7 @@ public/build/
 chrome-extension/dist/
 
 # Env files
+.env
 .env.development
 
 # Editors

@@ -24,20 +24,20 @@ class TokenBlacklist:
     def is_blacklisted(self, token: str) -> bool:
         """Check if a token has been blacklisted.
 
-        Fails open: if Redis is unavailable, returns False to allow requests through.
+        Fails closed: if Redis is unavailable, raises the exception so the caller
+        treats the token as untrusted rather than letting logged-out tokens through.
 
         Args:
             token: JWT token string to check.
 
         Returns:
             True if token is blacklisted, False otherwise.
+
+        Raises:
+            redis.RedisError: If Redis is unavailable.
         """
-        try:
-            key = f"blacklist:token:{token}"
-            return self._redis.exists(key) == 1
-        except Exception:
-            # Fail-open: if Redis is down, allow requests through
-            return False
+        key = f"blacklist:token:{token}"
+        return self._redis.exists(key) == 1
 
 
 token_blacklist = TokenBlacklist()

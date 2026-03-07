@@ -26,11 +26,12 @@ export function useWebSocket(sessionId, token) {
     function connect() {
       if (cancelled) return;
       const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const url = `${protocol}://${window.location.host}/ws/${sessionId}?token=${encodeURIComponent(token)}`;
+      const url = `${protocol}://${window.location.host}/ws/${sessionId}`;
       const ws = new WebSocket(url);
 
       ws.onopen = () => {
         clearTimeout(reconnectTimerRef.current);
+        ws.send(JSON.stringify({ type: 'auth', token: tokenRef.current }));
         setConnected(true);
         setReconnecting(false);
         retriesRef.current = 0;

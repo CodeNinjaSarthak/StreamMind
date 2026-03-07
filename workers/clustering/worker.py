@@ -59,32 +59,39 @@ def main() -> None:
                         k = min(max(2, len(comments) // 4), 10)
                         kmeans = KMeans(n_clusters=k, random_state=42, n_init=10).fit(embeddings)
 
-                        for i in range(k):
-                            indices = np.where(kmeans.labels_ == i)[0]
-                            if len(indices) == 0:
-                                continue
-                            centroid = kmeans.cluster_centers_[i]
-                            cluster_embeddings = embeddings[indices]
-                            distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
-                            closest_comment = comments[indices[np.argmin(distances)]]
-                            cluster = Cluster(
-                                session_id=session_id,
-                                title=closest_comment.text[:200],
-                                centroid_embedding=centroid.tolist(),
-                                comment_count=len(indices),
-                                similarity_threshold=0.8
-                            )
-                            db.add(cluster)
-                            db.flush()
-                            cluster_comments = [comments[j] for j in indices]
-                            for c in cluster_comments:
-                                c.cluster_id = cluster.id
+                        payloads = []
+                        try:
+                            for i in range(k):
+                                indices = np.where(kmeans.labels_ == i)[0]
+                                if len(indices) == 0:
+                                    continue
+                                centroid = kmeans.cluster_centers_[i]
+                                cluster_embeddings = embeddings[indices]
+                                distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
+                                closest_comment = comments[indices[np.argmin(distances)]]
+                                cluster = Cluster(
+                                    session_id=session_id,
+                                    title=closest_comment.text[:200],
+                                    centroid_embedding=centroid.tolist(),
+                                    comment_count=len(indices),
+                                    similarity_threshold=0.8
+                                )
+                                db.add(cluster)
+                                db.flush()
+                                cluster_comments = [comments[j] for j in indices]
+                                for c in cluster_comments:
+                                    c.cluster_id = cluster.id
+                                payloads.append(AnswerGenerationPayload(
+                                    cluster_id=str(cluster.id),
+                                    session_id=session_id,
+                                    question_texts=[c.text for c in cluster_comments]
+                                ).to_dict())
                             db.commit()
-                            manager.enqueue(QUEUE_ANSWER_GENERATION, AnswerGenerationPayload(
-                                cluster_id=str(cluster.id),
-                                session_id=session_id,
-                                question_texts=[c.text for c in cluster_comments]
-                            ).to_dict())
+                        except Exception:
+                            db.rollback()
+                            raise
+                        for payload in payloads:
+                            manager.enqueue(QUEUE_ANSWER_GENERATION, payload)
                         logger.info(f"Created {k} clusters for session {session_id}")
                     finally:
                         db.close()

@@ -21,7 +21,6 @@ async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str,
     connection_id: Optional[str] = Query(None),
-    token: Optional[str] = Query(None),
 ) -> None:
     """WebSocket endpoint for real-time updates.
 
@@ -29,13 +28,29 @@ async def websocket_endpoint(
         websocket: WebSocket connection.
         session_id: Session ID (UUID string).
         connection_id: Optional connection ID for reconnection.
-        token: Optional JWT token for authentication and session ownership check.
     """
-    # Verify JWT and check session ownership if token is provided
-    if token:
-        payload = verify_token(token)
+    conn_id = None
+    try:
+        conn_id = await manager.connect(session_id, websocket, connection_id)
+
+        # Expect the first message to be {"type": "auth", "token": "<jwt>"}
+        try:
+            raw = await websocket.receive_text()
+            first_msg = json.loads(raw)
+        except (json.JSONDecodeError, Exception):
+            await websocket.close(code=4001, reason="Auth message required")
+            manager.disconnect(session_id, conn_id)
+            return
+
+        if first_msg.get("type") != "auth" or not first_msg.get("token"):
+            await websocket.close(code=4001, reason="Auth message required")
+            manager.disconnect(session_id, conn_id)
+            return
+
+        payload = verify_token(first_msg["token"])
         if not payload:
             await websocket.close(code=4001, reason="Invalid token")
+            manager.disconnect(session_id, conn_id)
             return
 
         db = SessionLocal()
@@ -47,13 +62,10 @@ async def websocket_endpoint(
             )
             if not session_obj or str(session_obj.teacher_id) != payload.get("sub"):
                 await websocket.close(code=4003, reason="Forbidden")
+                manager.disconnect(session_id, conn_id)
                 return
         finally:
             db.close()
-
-    conn_id = None
-    try:
-        conn_id = await manager.connect(session_id, websocket, connection_id)
 
         await websocket.send_json(
             event_service.create_connected_event(conn_id, session_id)
