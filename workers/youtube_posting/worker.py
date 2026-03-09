@@ -140,7 +140,7 @@ def main() -> None:
                         str(answer.id), str(answer.cluster_id)
                     )
                     redis_client.publish(
-                        f"ws:session:{session_id}", json.dumps(event)
+                        f"ws:{session_id}", json.dumps(event)
                     )
                     logger.info(
                         f"Posted answer {answer_id} to YouTube chat (msg_id={msg_id})"

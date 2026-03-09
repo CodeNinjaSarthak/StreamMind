@@ -7,11 +7,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """FastAPI application main entry point."""
 
 import asyncio
-import json
 import logging
 import os
 
-import redis.asyncio as aioredis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -75,26 +73,6 @@ if settings.frontend_dir and os.path.isdir(settings.frontend_dir):
     logger.info(f"Serving frontend from {settings.frontend_dir} at /app")
 
 
-async def _relay_redis_events() -> None:
-    """Subscribe to worker-published Redis pub/sub events and relay via WebSocket."""
-    try:
-        r = aioredis.from_url(settings.redis_url, decode_responses=True)
-        pubsub = r.pubsub()
-        await pubsub.psubscribe("ws:session:*")
-        async for message in pubsub.listen():
-            if message["type"] != "pmessage":
-                continue
-            channel = message["channel"]  # "ws:session:{session_id}"
-            session_id = channel.split(":")[-1]
-            try:
-                event = json.loads(message["data"])
-                await manager.broadcast_to_session(session_id, event)
-            except Exception as e:
-                logger.error(f"Failed to relay Redis event for session {session_id}: {e}")
-    except Exception as e:
-        logger.error(f"Redis relay error: {e}")
-
-
 @app.get("/")
 async def root() -> dict:
     """Root endpoint."""
@@ -135,7 +113,7 @@ async def startup_event():
         f"Starting {settings.app_name} v{settings.app_version}",
         extra={"environment": settings.environment, "debug": settings.debug},
     )
-    _relay_task = asyncio.create_task(_relay_redis_events())
+    _relay_task = asyncio.create_task(manager.start_subscriber())
 
 
 @app.on_event("shutdown")
