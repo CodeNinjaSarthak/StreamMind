@@ -21,9 +21,7 @@ class YouTubeQuotaService:
     def _ttl_to_midnight(self) -> int:
         """Seconds until next UTC midnight (quota reset time)."""
         now = datetime.now(timezone.utc)
-        midnight = (now + timedelta(days=1)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         return max(1, int((midnight - now).total_seconds()))
 
     def check_quota(self, teacher_id: str, operation: str) -> bool:

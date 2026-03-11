@@ -41,4 +41,3 @@ def is_question(text: str) -> bool:
     """
     # TODO: Implement actual question detection
     return text.strip().endswith("?")
-

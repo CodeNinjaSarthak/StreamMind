@@ -19,4 +19,3 @@ async def schedule_monitoring() -> None:
     """Schedule monitoring tasks."""
     # TODO: Implement scheduling logic
     pass
-

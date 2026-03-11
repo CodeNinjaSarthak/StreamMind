@@ -39,7 +39,7 @@ class SessionResponse(BaseModel):
 
 
 class HourlyCount(BaseModel):
-    hour: str   # ISO datetime string for tz-aware frontend formatting
+    hour: str  # ISO datetime string for tz-aware frontend formatting
     count: int
 
 
@@ -51,8 +51,8 @@ class TopCluster(BaseModel):
 class SessionAnalyticsResponse(BaseModel):
     total_questions: int
     total_clusters: int
-    response_rate: float        # clusters_with_posted_answer / total_clusters
+    response_rate: float  # clusters_with_posted_answer / total_clusters
     avg_cluster_size: float
-    peak_hour: Optional[str]    # ISO datetime string or None
+    peak_hour: Optional[str]  # ISO datetime string or None
     questions_over_time: List[HourlyCount]
     top_clusters: List[TopCluster]  # top 5 by comment_count

@@ -1,2 +1,1 @@
 """Trigger monitor worker package."""
-

@@ -111,11 +111,10 @@ async def oauth_callback(
         )
 
     from uuid import UUID
+
     teacher_id = UUID(data["teacher_id"])
 
-    existing_token = (
-        db.query(YouTubeToken).filter(YouTubeToken.teacher_id == teacher_id).first()
-    )
+    existing_token = db.query(YouTubeToken).filter(YouTubeToken.teacher_id == teacher_id).first()
     if existing_token:
         existing_token.access_token = encrypt_data(token_data["access_token"])
         if token_data.get("refresh_token"):
@@ -126,9 +125,7 @@ async def oauth_callback(
         new_token = YouTubeToken(
             teacher_id=teacher_id,
             access_token=encrypt_data(token_data["access_token"]),
-            refresh_token=encrypt_data(token_data["refresh_token"])
-            if token_data.get("refresh_token")
-            else "",
+            refresh_token=encrypt_data(token_data["refresh_token"]) if token_data.get("refresh_token") else "",
             expires_at=token_data.get("expires_at"),
             scope=token_data.get("scope", ""),
         )
@@ -146,11 +143,7 @@ async def refresh_token(
     db: Session = Depends(get_db),
 ) -> dict:
     """Refresh YouTube access token."""
-    token = (
-        db.query(YouTubeToken)
-        .filter(YouTubeToken.teacher_id == current_user.id)
-        .first()
-    )
+    token = db.query(YouTubeToken).filter(YouTubeToken.teacher_id == current_user.id).first()
     if not token:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -180,20 +173,14 @@ async def get_auth_status(
     db: Session = Depends(get_db),
 ) -> dict:
     """Get YouTube connection status."""
-    token = (
-        db.query(YouTubeToken)
-        .filter(YouTubeToken.teacher_id == current_user.id)
-        .first()
-    )
+    token = db.query(YouTubeToken).filter(YouTubeToken.teacher_id == current_user.id).first()
     if not token:
         return {"connected": False, "expires_at": None}
 
     expires_at_str = None
     if token.expires_at:
         expires_at_str = (
-            token.expires_at.isoformat()
-            if hasattr(token.expires_at, "isoformat")
-            else str(token.expires_at)
+            token.expires_at.isoformat() if hasattr(token.expires_at, "isoformat") else str(token.expires_at)
         )
     return {"connected": True, "expires_at": expires_at_str}
 
@@ -204,11 +191,7 @@ async def disconnect_youtube(
     db: Session = Depends(get_db),
 ) -> None:
     """Delete YouTube token (disconnect)."""
-    token = (
-        db.query(YouTubeToken)
-        .filter(YouTubeToken.teacher_id == current_user.id)
-        .first()
-    )
+    token = db.query(YouTubeToken).filter(YouTubeToken.teacher_id == current_user.id).first()
     if token:
         db.delete(token)
         db.commit()
@@ -221,11 +204,7 @@ async def get_video_info(
     db: Session = Depends(get_db),
 ) -> dict:
     """Get video title and live chat status via teacher's token."""
-    token = (
-        db.query(YouTubeToken)
-        .filter(YouTubeToken.teacher_id == current_user.id)
-        .first()
-    )
+    token = db.query(YouTubeToken).filter(YouTubeToken.teacher_id == current_user.id).first()
     if not token:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -258,11 +237,7 @@ async def validate_video(
     db: Session = Depends(get_db),
 ) -> dict:
     """Validate a video ID and check if it is a live stream."""
-    token = (
-        db.query(YouTubeToken)
-        .filter(YouTubeToken.teacher_id == current_user.id)
-        .first()
-    )
+    token = db.query(YouTubeToken).filter(YouTubeToken.teacher_id == current_user.id).first()
     if not token:
         return {"valid": False, "is_live": False, "title": ""}
 

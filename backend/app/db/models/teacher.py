@@ -26,7 +26,7 @@ class Teacher(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
 
     # Relationships
@@ -34,4 +34,3 @@ class Teacher(Base):
     youtube_tokens = relationship("YouTubeToken", back_populates="teacher")
     quotas = relationship("Quota", back_populates="teacher")
     rag_documents = relationship("RAGDocument", back_populates="teacher", cascade="all, delete-orphan")
-

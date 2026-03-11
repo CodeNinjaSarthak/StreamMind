@@ -42,4 +42,3 @@ class SessionStatsService:
             "total_comments": 0,
             "total_answers": 0,
         }
-

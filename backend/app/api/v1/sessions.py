@@ -148,13 +148,7 @@ async def list_session_comments(
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
-    comments = (
-        db.query(Comment)
-        .filter(Comment.session_id == session_id)
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    comments = db.query(Comment).filter(Comment.session_id == session_id).offset(offset).limit(limit).all()
     return comments
 
 
@@ -176,12 +170,7 @@ async def list_session_clusters(
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
-    clusters = (
-        db.query(Cluster)
-        .options(selectinload(Cluster.answers))
-        .filter(Cluster.session_id == session_id)
-        .all()
-    )
+    clusters = db.query(Cluster).options(selectinload(Cluster.answers)).filter(Cluster.session_id == session_id).all()
     return clusters
 
 
@@ -204,18 +193,11 @@ async def get_session_analytics(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
     # Totals
-    total_questions = (
-        db.query(Comment)
-        .filter(Comment.session_id == session_id, Comment.is_question == True)
-        .count()
-    )
+    total_questions = db.query(Comment).filter(Comment.session_id == session_id, Comment.is_question == True).count()
 
     clusters = db.query(Cluster).filter(Cluster.session_id == session_id).all()
     total_clusters = len(clusters)
-    avg_cluster_size = (
-        sum(c.comment_count for c in clusters) / total_clusters
-        if total_clusters > 0 else 0.0
-    )
+    avg_cluster_size = sum(c.comment_count for c in clusters) / total_clusters if total_clusters > 0 else 0.0
 
     # Clusters with at least one posted answer
     clusters_answered = (
@@ -242,10 +224,7 @@ async def get_session_analytics(
         .all()
     )
 
-    questions_over_time = [
-        {"hour": row.hour.isoformat(), "count": row.count}
-        for row in hourly_rows
-    ]
+    questions_over_time = [{"hour": row.hour.isoformat(), "count": row.count} for row in hourly_rows]
 
     peak_hour = None
     if hourly_rows:
@@ -262,8 +241,5 @@ async def get_session_analytics(
         "avg_cluster_size": round(avg_cluster_size, 1),
         "peak_hour": peak_hour,
         "questions_over_time": questions_over_time,
-        "top_clusters": [
-            {"title": c.title, "comment_count": c.comment_count}
-            for c in top_clusters
-        ],
+        "top_clusters": [{"title": c.title, "comment_count": c.comment_count} for c in top_clusters],
     }

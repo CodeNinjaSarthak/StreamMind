@@ -13,8 +13,7 @@ class Settings(BaseSettings):
 
     # Environment
     environment: Literal["development", "staging", "production"] = Field(
-        default="development",
-        description="Runtime environment"
+        default="development", description="Runtime environment"
     )
 
     # Application metadata
@@ -24,8 +23,7 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = Field(
-        default="postgresql://user:pass@localhost:5432/ai_doubt_manager",
-        description="PostgreSQL database URL"
+        default="postgresql://user:pass@localhost:5432/ai_doubt_manager", description="PostgreSQL database URL"
     )
     database_echo: bool = False
     database_pool_size: int = 5
@@ -34,18 +32,12 @@ class Settings(BaseSettings):
     database_pool_pre_ping: bool = True
 
     # Redis
-    redis_url: str = Field(
-        default="redis://localhost:6379/0",
-        description="Redis connection URL"
-    )
+    redis_url: str = Field(default="redis://localhost:6379/0", description="Redis connection URL")
     redis_max_connections: int = 10
     redis_decode_responses: bool = True
 
     # Security
-    secret_key: str = Field(
-        default="change-me-in-production",
-        description="Secret key for JWT encoding"
-    )
+    secret_key: str = Field(default="change-me-in-production", description="Secret key for JWT encoding")
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
@@ -55,7 +47,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     cors_origins: list[str] = Field(
         default=["http://localhost:3000", "http://localhost:8000", "http://localhost:8080"],
-        description="Allowed CORS origins"
+        description="Allowed CORS origins",
     )
 
     # YouTube API
@@ -72,17 +64,14 @@ class Settings(BaseSettings):
 
     # Encryption
     encryption_key: str = Field(
-        default="change-me-must-be-32-chars-padded!",
-        description="Exactly 32+ character key for Fernet encryption"
+        default="change-me-must-be-32-chars-padded!", description="Exactly 32+ character key for Fernet encryption"
     )
 
     @field_validator("encryption_key")
     @classmethod
     def validate_encryption_key(cls, v: str) -> str:
         if len(v) < 32:
-            raise ValueError(
-                f"encryption_key must be at least 32 characters, got {len(v)}"
-            )
+            raise ValueError(f"encryption_key must be at least 32 characters, got {len(v)}")
         return v
 
     # Quota limits
@@ -114,12 +103,7 @@ class Settings(BaseSettings):
     websocket_heartbeat_interval: int = 30
     websocket_timeout: int = 300
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore")
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -157,4 +141,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-

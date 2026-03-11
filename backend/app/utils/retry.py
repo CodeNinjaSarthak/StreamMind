@@ -44,4 +44,3 @@ async def retry_async(
                 current_delay *= backoff
 
     raise last_exception
-

@@ -28,7 +28,7 @@ class RateLimiter:
         cutoff = now - window
         pipe = self._redis.pipeline()
         pipe.zremrangebyscore(key, 0, cutoff)  # remove expired entries
-        pipe.zcard(key)                          # count BEFORE adding
+        pipe.zcard(key)  # count BEFORE adding
         pipe.expire(key, window)
         results = pipe.execute()
         count = results[1]

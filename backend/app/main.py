@@ -120,6 +120,7 @@ async def health() -> dict:
 async def metrics():
     """Prometheus metrics endpoint."""
     from starlette.requests import Request
+
     request = Request(scope={"type": "http"})
     return await metrics_endpoint(request)
 

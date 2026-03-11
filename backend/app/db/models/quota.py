@@ -16,12 +16,7 @@ class Quota(Base):
     __tablename__ = "quotas"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    teacher_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("teachers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
+    teacher_id = Column(UUID(as_uuid=True), ForeignKey("teachers.id", ondelete="CASCADE"), nullable=False, index=True)
     quota_type = Column(String(50), nullable=False)
     used = Column(Integer, default=0, nullable=False)
     limit = Column(Integer, nullable=False)
@@ -32,7 +27,7 @@ class Quota(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
 
     # Relationships
@@ -42,4 +37,3 @@ class Quota(Base):
         UniqueConstraint("teacher_id", "quota_type", "period", name="uq_teacher_quota_period"),
         Index("idx_quota_teacher_type", "teacher_id", "quota_type"),
     )
-

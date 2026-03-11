@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 try:
     from backend.app.core.config import settings
+
     REDIS_URL = settings.redis_url
     MAX_CONNECTIONS = settings.redis_max_connections
     DECODE_RESPONSES = settings.redis_decode_responses
@@ -120,4 +121,3 @@ def get_json(client: redis.Redis, key: str) -> Optional[Any]:
     except Exception as e:
         logger.error(f"Failed to get JSON key {key}: {e}")
         return None
-

@@ -24,4 +24,3 @@ def increment_counter(name: str, tags: Dict[str, str] = None) -> None:
     """
     # TODO: Implement actual counter increment
     pass
-

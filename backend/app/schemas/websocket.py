@@ -17,4 +17,3 @@ class WebSocketResponse(BaseModel):
 
     status: str
     message: Optional[str] = None
-

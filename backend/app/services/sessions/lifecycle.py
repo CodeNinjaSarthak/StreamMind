@@ -11,9 +11,7 @@ class SessionLifecycleService:
         """Initialize session lifecycle service."""
         pass
 
-    def create_session(
-        self, teacher_id: int, youtube_video_id: str, title: Optional[str] = None
-    ) -> dict:
+    def create_session(self, teacher_id: int, youtube_video_id: str, title: Optional[str] = None) -> dict:
         """Create a new streaming session.
 
         Args:
@@ -56,4 +54,3 @@ class SessionLifecycleService:
         """
         # TODO: Implement actual session retrieval
         return None
-

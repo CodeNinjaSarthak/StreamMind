@@ -55,11 +55,7 @@ async def websocket_endpoint(
 
         db = SessionLocal()
         try:
-            session_obj = (
-                db.query(StreamingSession)
-                .filter(StreamingSession.id == session_id)
-                .first()
-            )
+            session_obj = db.query(StreamingSession).filter(StreamingSession.id == session_id).first()
             if not session_obj or str(session_obj.teacher_id) != payload.get("sub"):
                 await websocket.close(code=4003, reason="Forbidden")
                 manager.disconnect(session_id, conn_id)
@@ -67,9 +63,7 @@ async def websocket_endpoint(
         finally:
             db.close()
 
-        await websocket.send_json(
-            event_service.create_connected_event(conn_id, session_id)
-        )
+        await websocket.send_json(event_service.create_connected_event(conn_id, session_id))
 
         while True:
             data = await websocket.receive_text()
@@ -88,18 +82,12 @@ async def websocket_endpoint(
 
                 else:
                     logger.info(f"Received message: {msg_type} from {conn_id}")
-                    await websocket.send_json({
-                        "type": "ack",
-                        "message": "Message received"
-                    })
+                    await websocket.send_json({"type": "ack", "message": "Message received"})
 
             except json.JSONDecodeError:
                 logger.error(f"Invalid JSON from {conn_id}")
                 await websocket.send_json(
-                    event_service.create_error_event(
-                        "Invalid JSON format",
-                        error_code="INVALID_JSON"
-                    )
+                    event_service.create_error_event("Invalid JSON format", error_code="INVALID_JSON")
                 )
 
     except WebSocketDisconnect:

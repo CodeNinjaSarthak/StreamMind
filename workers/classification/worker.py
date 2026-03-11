@@ -18,10 +18,7 @@ from workers.common.schemas import EmbeddingPayload
 from app.services.gemini.client import GeminiClient
 from app.db.models.comment import Comment
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 1  # seconds
@@ -54,16 +51,17 @@ def main() -> None:
                         comment.confidence_score = result["confidence"]
                         db.commit()
                         if result["is_question"]:
-                            manager.enqueue(QUEUE_EMBEDDING, EmbeddingPayload(
-                                comment_id=str(comment.id), text=comment.text
-                            ).to_dict())
+                            manager.enqueue(
+                                QUEUE_EMBEDDING,
+                                EmbeddingPayload(comment_id=str(comment.id), text=comment.text).to_dict(),
+                            )
                         logger.info(
                             "Classification complete",
                             extra={
                                 "comment_id": comment_id,
                                 "is_question": result["is_question"],
                                 "confidence": result["confidence"],
-                            }
+                            },
                         )
                     finally:
                         db.close()

@@ -18,10 +18,7 @@ from workers.common.schemas import ClusteringPayload
 from app.services.gemini.client import GeminiClient
 from app.db.models.comment import Comment
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 1  # seconds
@@ -62,18 +59,22 @@ def main() -> None:
                         redis_client.expire(f"question_count:{comment.session_id}", 3600)
                         if count == threshold:
                             question_ids = [
-                                str(c.id) for c in db.query(Comment).filter(
+                                str(c.id)
+                                for c in db.query(Comment)
+                                .filter(
                                     Comment.session_id == comment.session_id,
                                     Comment.is_question == True,
                                     Comment.embedding.isnot(None),
-                                    Comment.cluster_id.is_(None)
-                                ).all()
+                                    Comment.cluster_id.is_(None),
+                                )
+                                .all()
                             ]
-                            manager.enqueue(QUEUE_CLUSTERING, ClusteringPayload(
-                                session_id=str(comment.session_id),
-                                comment_ids=question_ids,
-                                trigger_type="auto"
-                            ).to_dict())
+                            manager.enqueue(
+                                QUEUE_CLUSTERING,
+                                ClusteringPayload(
+                                    session_id=str(comment.session_id), comment_ids=question_ids, trigger_type="auto"
+                                ).to_dict(),
+                            )
                             redis_client.delete(f"question_count:{comment.session_id}")
                         logger.info(f"Embedding stored for comment {comment_id}")
                     finally:

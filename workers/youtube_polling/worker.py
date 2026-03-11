@@ -84,25 +84,19 @@ def poll_session(session_id: str, manager: QueueManager) -> None:
             # Get live_chat_id if not cached (costs quota)
             if not live_chat_id:
                 if not quota_service.check_quota(teacher_id_str, "get_chat_id"):
-                    logger.warning(
-                        f"Quota exceeded (get_chat_id) for teacher {teacher_id_str}"
-                    )
+                    logger.warning(f"Quota exceeded (get_chat_id) for teacher {teacher_id_str}")
                     return
                 client = YouTubeClient(access_token)
                 live_chat_id = client.get_live_chat_id(session.youtube_video_id)
                 quota_service.record_usage(teacher_id_str, "get_chat_id")
                 if not live_chat_id:
-                    logger.warning(
-                        f"Video {session.youtube_video_id} not live, skipping"
-                    )
+                    logger.warning(f"Video {session.youtube_video_id} not live, skipping")
                     return
                 redis_client.setex(chat_id_key, 3600, live_chat_id)
 
             # Check quota before polling
             if not quota_service.check_quota(teacher_id_str, "poll"):
-                logger.warning(
-                    f"Daily quota exceeded for teacher {teacher_id_str}, skipping poll"
-                )
+                logger.warning(f"Daily quota exceeded for teacher {teacher_id_str}, skipping poll")
                 return
 
             page_token = redis_client.get(page_token_key)
@@ -123,28 +117,20 @@ def poll_session(session_id: str, manager: QueueManager) -> None:
                     result = client.list_messages(live_chat_id, page_token)
                     quota_service.record_usage(teacher_id_str, "poll")
                 elif e.resp.status == 403:
-                    logger.warning(
-                        f"YouTube API quota exceeded (HTTP 403) for session {session_id}"
-                    )
+                    logger.warning(f"YouTube API quota exceeded (HTTP 403) for session {session_id}")
                     return
                 else:
                     raise
 
             fetched = 0
             for msg_data in result["messages"]:
-                existing = (
-                    db.query(Comment)
-                    .filter_by(youtube_comment_id=msg_data["youtube_comment_id"])
-                    .first()
-                )
+                existing = db.query(Comment).filter_by(youtube_comment_id=msg_data["youtube_comment_id"]).first()
                 if existing:
                     continue
 
                 published_at = None
                 if msg_data.get("published_at"):
-                    published_at = datetime.fromisoformat(
-                        msg_data["published_at"].replace("Z", "+00:00")
-                    )
+                    published_at = datetime.fromisoformat(msg_data["published_at"].replace("Z", "+00:00"))
 
                 comment = Comment(
                     session_id=session.id,
@@ -209,22 +195,15 @@ def main() -> None:
                 db.close()
 
         if active_session_ids:
-            with ThreadPoolExecutor(
-                max_workers=min(len(active_session_ids), 10)
-            ) as executor:
-                futures = {
-                    executor.submit(poll_session, sid, manager): sid
-                    for sid in active_session_ids
-                }
+            with ThreadPoolExecutor(max_workers=min(len(active_session_ids), 10)) as executor:
+                futures = {executor.submit(poll_session, sid, manager): sid for sid in active_session_ids}
                 for future in as_completed(futures):
                     sid = futures[future]
                     try:
                         future.result()
                     except Exception as e:
                         _stats["errors"] += 1
-                        logger.error(
-                            f"Poll error for session {sid}: {e}", exc_info=True
-                        )
+                        logger.error(f"Poll error for session {sid}: {e}", exc_info=True)
 
         time.sleep(POLL_INTERVAL)
 

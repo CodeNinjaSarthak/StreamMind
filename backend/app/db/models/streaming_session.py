@@ -28,7 +28,7 @@ class StreamingSession(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
 
     # Relationships
@@ -40,4 +40,3 @@ class StreamingSession(Base):
         Index("idx_session_teacher_active", "teacher_id", "is_active"),
         Index("idx_session_youtube_video", "youtube_video_id"),
     )
-

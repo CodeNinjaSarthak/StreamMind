@@ -38,12 +38,7 @@ class WebSocketManager:
         self.active_connections: Dict[str, Dict[str, ConnectionInfo]] = {}
         self.heartbeat_task: Optional[asyncio.Task] = None
 
-    async def connect(
-        self,
-        session_id: str,
-        websocket: WebSocket,
-        connection_id: Optional[str] = None
-    ) -> str:
+    async def connect(self, session_id: str, websocket: WebSocket, connection_id: Optional[str] = None) -> str:
         """Connect a WebSocket to a session.
 
         Args:
@@ -58,6 +53,7 @@ class WebSocketManager:
 
         if connection_id is None:
             import uuid
+
             connection_id = str(uuid.uuid4())
 
         if session_id not in self.active_connections:
@@ -71,8 +67,8 @@ class WebSocketManager:
             extra={
                 "session_id": session_id,
                 "connection_id": connection_id,
-                "total_connections": len(self.active_connections[session_id])
-            }
+                "total_connections": len(self.active_connections[session_id]),
+            },
         )
 
         if self.heartbeat_task is None or self.heartbeat_task.done():
@@ -91,19 +87,13 @@ class WebSocketManager:
             if connection_id in self.active_connections[session_id]:
                 del self.active_connections[session_id][connection_id]
                 logger.info(
-                    f"WebSocket disconnected",
-                    extra={"session_id": session_id, "connection_id": connection_id}
+                    f"WebSocket disconnected", extra={"session_id": session_id, "connection_id": connection_id}
                 )
 
             if not self.active_connections[session_id]:
                 del self.active_connections[session_id]
 
-    async def send_personal_message(
-        self,
-        session_id: str,
-        connection_id: str,
-        message: Dict[str, Any]
-    ) -> bool:
+    async def send_personal_message(self, session_id: str, connection_id: str, message: Dict[str, Any]) -> bool:
         """Send a message to a specific WebSocket.
 
         Args:
@@ -132,10 +122,7 @@ class WebSocketManager:
             return False
 
     async def broadcast_to_session(
-        self,
-        session_id: str,
-        message: Dict[str, Any],
-        exclude_connection: Optional[str] = None
+        self, session_id: str, message: Dict[str, Any], exclude_connection: Optional[str] = None
     ) -> int:
         """Broadcast a message to all connections in a session.
 
@@ -196,9 +183,7 @@ class WebSocketManager:
             True if heartbeat sent successfully.
         """
         return await self.send_personal_message(
-            session_id,
-            connection_id,
-            {"type": "ping", "timestamp": datetime.now(timezone.utc).isoformat()}
+            session_id, connection_id, {"type": "ping", "timestamp": datetime.now(timezone.utc).isoformat()}
         )
 
     async def _heartbeat_loop(self) -> None:
@@ -237,4 +222,3 @@ class WebSocketManager:
 
 
 manager = WebSocketManager()
-

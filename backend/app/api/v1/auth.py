@@ -33,10 +33,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=TeacherResponse, status_code=status.HTTP_201_CREATED)
-async def register(
-    request: RegisterRequest,
-    db: Session = Depends(get_db)
-) -> Teacher:
+async def register(request: RegisterRequest, db: Session = Depends(get_db)) -> Teacher:
     """Register a new teacher.
 
     Args:
@@ -51,17 +48,14 @@ async def register(
     """
     existing_teacher = db.query(Teacher).filter(Teacher.email == request.email).first()
     if existing_teacher:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
     teacher = Teacher(
         email=request.email,
         name=request.name,
         hashed_password=hash_password(request.password),
         is_active=True,
-        is_verified=False
+        is_verified=False,
     )
     db.add(teacher)
     db.commit()
@@ -71,10 +65,7 @@ async def register(
 
 
 @router.post("/login", response_model=Token)
-async def login(
-    credentials: LoginRequest,
-    db: Session = Depends(get_db)
-) -> dict:
+async def login(credentials: LoginRequest, db: Session = Depends(get_db)) -> dict:
     """Login endpoint.
 
     Args:
@@ -97,10 +88,7 @@ async def login(
         )
 
     if not teacher.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
 
     access_token = create_access_token(data={"sub": str(teacher.id)})
     refresh_token = create_refresh_token(data={"sub": str(teacher.id)})
@@ -109,15 +97,12 @@ async def login(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": settings.access_token_expire_minutes * 60
+        "expires_in": settings.access_token_expire_minutes * 60,
     }
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token_endpoint(
-    request: RefreshTokenRequest,
-    db: Session = Depends(get_db)
-) -> dict:
+async def refresh_token_endpoint(request: RefreshTokenRequest, db: Session = Depends(get_db)) -> dict:
     """Refresh token endpoint.
 
     Args:
@@ -132,25 +117,17 @@ async def refresh_token_endpoint(
     """
     payload = verify_token(request.refresh_token)
     if not payload or payload.get("type") != "refresh":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
     teacher_id = payload.get("sub")
     if not teacher_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
     from uuid import UUID
+
     teacher = db.query(Teacher).filter(Teacher.id == UUID(teacher_id)).first()
     if not teacher or not teacher.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
     access_token = create_access_token(data={"sub": str(teacher.id)})
     refresh_token = create_refresh_token(data={"sub": str(teacher.id)})
@@ -159,14 +136,12 @@ async def refresh_token_endpoint(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": settings.access_token_expire_minutes * 60
+        "expires_in": settings.access_token_expire_minutes * 60,
     }
 
 
 @router.get("/me", response_model=TeacherResponse)
-async def get_current_teacher(
-    current_user: Teacher = Depends(get_current_active_user)
-) -> Teacher:
+async def get_current_teacher(current_user: Teacher = Depends(get_current_active_user)) -> Teacher:
     """Get current authenticated teacher.
 
     Args:
@@ -197,10 +172,7 @@ async def change_password(
     db: Session = Depends(get_db),
 ) -> dict:
     if not verify_password(request.current_password, current_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is incorrect"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
     current_user.hashed_password = hash_password(request.new_password)
     db.commit()
     return {"message": "Password changed successfully"}
@@ -223,4 +195,3 @@ async def logout(
             expires_in = int(exp - datetime.now(timezone.utc).timestamp())
             token_blacklist.blacklist_token(token, expires_in)  # skips if <= 0
     return {"status": "ok", "message": "Logged out successfully"}
-

@@ -64,9 +64,7 @@ def main() -> None:
         try:
             # Log metrics every 60s
             if time.time() - _stats["last_log"] >= 60:
-                logger.info(
-                    f"Posting stats — posted: {_stats['posted']}, errors: {_stats['errors']}"
-                )
+                logger.info(f"Posting stats — posted: {_stats['posted']}, errors: {_stats['errors']}")
                 _stats["last_log"] = time.time()
 
             task = manager.dequeue(QUEUE_YOUTUBE_POSTING)
@@ -90,36 +88,24 @@ def main() -> None:
                         logger.warning(f"Session {session_id} not found")
                         break
 
-                    token = (
-                        db.query(YouTubeToken)
-                        .filter_by(teacher_id=session.teacher_id)
-                        .first()
-                    )
+                    token = db.query(YouTubeToken).filter_by(teacher_id=session.teacher_id).first()
                     if not token:
-                        logger.warning(
-                            f"No YouTube token for teacher {session.teacher_id}"
-                        )
+                        logger.warning(f"No YouTube token for teacher {session.teacher_id}")
                         break
 
                     teacher_id_str = str(session.teacher_id)
 
                     # Check quota before posting
                     if not quota_service.check_quota(teacher_id_str, "post"):
-                        logger.warning(
-                            f"Daily quota exceeded for posting, teacher {teacher_id_str}"
-                        )
+                        logger.warning(f"Daily quota exceeded for posting, teacher {teacher_id_str}")
                         manager.retry(QUEUE_YOUTUBE_POSTING, task)
                         task = None
                         break
 
                     # Get live_chat_id from cache only (set by polling worker)
-                    live_chat_id = redis_client.get(
-                        f"youtube:poll:{session_id}:chat_id"
-                    )
+                    live_chat_id = redis_client.get(f"youtube:poll:{session_id}:chat_id")
                     if not live_chat_id:
-                        logger.warning(
-                            f"No live_chat_id cached for session {session_id}, retrying"
-                        )
+                        logger.warning(f"No live_chat_id cached for session {session_id}, retrying")
                         manager.retry(QUEUE_YOUTUBE_POSTING, task)
                         task = None
                         break
@@ -136,15 +122,9 @@ def main() -> None:
                     _stats["posted"] += 1
 
                     # Publish event for WebSocket relay
-                    event = event_service.create_answer_posted_event(
-                        str(answer.id), str(answer.cluster_id)
-                    )
-                    redis_client.publish(
-                        f"ws:session:{session_id}", json.dumps(event)
-                    )
-                    logger.info(
-                        f"Posted answer {answer_id} to YouTube chat (msg_id={msg_id})"
-                    )
+                    event = event_service.create_answer_posted_event(str(answer.id), str(answer.cluster_id))
+                    redis_client.publish(f"ws:session:{session_id}", json.dumps(event))
+                    logger.info(f"Posted answer {answer_id} to YouTube chat (msg_id={msg_id})")
 
                 finally:
                     db.close()

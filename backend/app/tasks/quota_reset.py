@@ -20,4 +20,3 @@ async def schedule_quota_reset() -> None:
     """Schedule quota reset task."""
     # TODO: Implement scheduling logic
     pass
-

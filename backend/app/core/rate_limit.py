@@ -10,9 +10,7 @@ from app.services.rate_limiter import RateLimiter
 _rate_limiter = RateLimiter()
 
 
-def rate_limit(
-    max_requests: int = 60, window_seconds: int = 60
-) -> Callable:
+def rate_limit(max_requests: int = 60, window_seconds: int = 60) -> Callable:
     """Decorator for rate limiting endpoints.
 
     Args:
@@ -22,6 +20,7 @@ def rate_limit(
     Returns:
         Decorator function.
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
@@ -34,6 +33,7 @@ def rate_limit(
                     detail="Rate limit exceeded. Please try again later.",
                 )
             return await func(request, *args, **kwargs)
-        return wrapper
-    return decorator
 
+        return wrapper
+
+    return decorator

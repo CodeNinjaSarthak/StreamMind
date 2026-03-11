@@ -34,7 +34,7 @@ class QueuePayload:
         created_at: Optional[datetime] = None,
         retry_count: int = 0,
         max_retries: int = DEFAULT_MAX_RETRIES,
-        **kwargs
+        **kwargs,
     ):
         """Initialize queue payload.
 
@@ -62,7 +62,7 @@ class QueuePayload:
             "created_at": self.created_at.isoformat(),
             "retry_count": self.retry_count,
             "max_retries": self.max_retries,
-            **self.data
+            **self.data,
         }
 
     @classmethod
@@ -84,7 +84,7 @@ class QueuePayload:
             created_at=created_at,
             retry_count=data.get("retry_count", 0),
             max_retries=data.get("max_retries", DEFAULT_MAX_RETRIES),
-            **{k: v for k, v in data.items() if k not in ["task_id", "created_at", "retry_count", "max_retries"]}
+            **{k: v for k, v in data.items() if k not in ["task_id", "created_at", "retry_count", "max_retries"]},
         )
 
 
@@ -99,12 +99,7 @@ class QueueManager:
         """
         self.redis_client = redis_client or get_redis_client()
 
-    def enqueue(
-        self,
-        queue_name: str,
-        payload: Dict[str, Any],
-        priority: int = 0
-    ) -> bool:
+    def enqueue(self, queue_name: str, payload: Dict[str, Any], priority: int = 0) -> bool:
         """Add task to queue.
 
         Args:
@@ -125,11 +120,7 @@ class QueueManager:
             logger.error(f"Failed to enqueue task to {queue_name}: {e}")
             return False
 
-    def dequeue(
-        self,
-        queue_name: str,
-        timeout: int = 0
-    ) -> Optional[Dict[str, Any]]:
+    def dequeue(self, queue_name: str, timeout: int = 0) -> Optional[Dict[str, Any]]:
         """Remove and return task from queue.
 
         Args:
@@ -184,12 +175,7 @@ class QueueManager:
             logger.error(f"Failed to get size of queue {queue_name}: {e}")
             return 0
 
-    def retry(
-        self,
-        queue_name: str,
-        payload: Dict[str, Any],
-        delay: int = DEFAULT_RETRY_DELAY
-    ) -> bool:
+    def retry(self, queue_name: str, payload: Dict[str, Any], delay: int = DEFAULT_RETRY_DELAY) -> bool:
         """Retry a failed task.
 
         Args:
@@ -206,7 +192,7 @@ class QueueManager:
         if retry_count >= max_retries:
             logger.warning(
                 f"Task exceeded max retries, moving to DLQ",
-                extra={"task_id": payload.get("task_id"), "queue": queue_name}
+                extra={"task_id": payload.get("task_id"), "queue": queue_name},
             )
             return self.move_to_dlq(queue_name, payload)
 
@@ -218,11 +204,7 @@ class QueueManager:
             self.redis_client.zadd(queue_name, {task_data: score})
             logger.info(
                 f"Task requeued for retry",
-                extra={
-                    "task_id": payload.get("task_id"),
-                    "queue": queue_name,
-                    "retry_count": payload["retry_count"]
-                }
+                extra={"task_id": payload.get("task_id"), "queue": queue_name, "retry_count": payload["retry_count"]},
             )
             return True
         except Exception as e:
@@ -245,10 +227,7 @@ class QueueManager:
         try:
             task_data = json.dumps(payload)
             self.redis_client.zadd(dlq_name, {task_data: time.time()})
-            logger.error(
-                f"Task moved to DLQ",
-                extra={"task_id": payload.get("task_id"), "dlq": dlq_name}
-            )
+            logger.error(f"Task moved to DLQ", extra={"task_id": payload.get("task_id"), "dlq": dlq_name})
             return True
         except Exception as e:
             logger.error(f"Failed to move task to DLQ: {e}")

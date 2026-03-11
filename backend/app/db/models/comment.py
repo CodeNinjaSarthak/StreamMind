@@ -18,17 +18,9 @@ class Comment(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     session_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("streaming_sessions.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        UUID(as_uuid=True), ForeignKey("streaming_sessions.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    cluster_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("clusters.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True
-    )
+    cluster_id = Column(UUID(as_uuid=True), ForeignKey("clusters.id", ondelete="SET NULL"), nullable=True, index=True)
     youtube_comment_id = Column(String(255), unique=True, index=True, nullable=False)
     author_name = Column(String(255), nullable=False)
     author_channel_id = Column(String(255), nullable=True)
@@ -43,7 +35,7 @@ class Comment(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
 
     # Relationships
@@ -56,4 +48,3 @@ class Comment(Base):
         Index("idx_comment_session_answered", "session_id", "is_answered"),
         Index("idx_comment_cluster", "cluster_id"),
     )
-

@@ -68,7 +68,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                     "path": request.url.path,
                     "status_code": response.status_code,
                     "process_time": process_time,
-                }
+                },
             )
 
             return response
@@ -82,7 +82,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                     "method": request.method,
                     "path": request.url.path,
                     "process_time": process_time,
-                }
+                },
             )
             raise
 

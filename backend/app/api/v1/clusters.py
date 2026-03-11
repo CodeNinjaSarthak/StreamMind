@@ -56,13 +56,7 @@ async def get_cluster_comments(
     )
     if not cluster:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cluster not found")
-    return (
-        db.query(Comment)
-        .filter(Comment.cluster_id == cluster_id)
-        .order_by(Comment.created_at)
-        .limit(limit)
-        .all()
-    )
+    return db.query(Comment).filter(Comment.cluster_id == cluster_id).order_by(Comment.created_at).limit(limit).all()
 
 
 @router.patch("/{cluster_id}", response_model=ClusterResponse)

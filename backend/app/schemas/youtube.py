@@ -23,4 +23,3 @@ class YouTubeVideoInfo(BaseModel):
     video_id: str
     title: Optional[str] = None
     channel_id: Optional[str] = None
-

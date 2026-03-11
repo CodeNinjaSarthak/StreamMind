@@ -18,10 +18,7 @@ class Cluster(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     session_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("streaming_sessions.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        UUID(as_uuid=True), ForeignKey("streaming_sessions.id", ondelete="CASCADE"), nullable=False, index=True
     )
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
@@ -33,7 +30,7 @@ class Cluster(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
 
     # Relationships
@@ -41,7 +38,4 @@ class Cluster(Base):
     comments = relationship("Comment", back_populates="cluster")
     answers = relationship("Answer", back_populates="cluster", cascade="all, delete-orphan")
 
-    __table_args__ = (
-        Index("idx_cluster_session", "session_id"),
-    )
-
+    __table_args__ = (Index("idx_cluster_session", "session_id"),)

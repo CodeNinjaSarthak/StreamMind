@@ -17,11 +17,7 @@ class RAGDocument(Base):
     __tablename__ = "rag_documents"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    teacher_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("teachers.id", ondelete="CASCADE"),
-        nullable=True
-    )
+    teacher_id = Column(UUID(as_uuid=True), ForeignKey("teachers.id", ondelete="CASCADE"), nullable=True)
     title = Column(String(500), nullable=False)
     content = Column(Text, nullable=False)
     source_type = Column(String(50), nullable=True)
@@ -33,12 +29,10 @@ class RAGDocument(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
 
     # Relationships
     teacher = relationship("Teacher", back_populates="rag_documents")
 
-    __table_args__ = (
-        Index("idx_rag_source_type", "source_type"),
-    )
+    __table_args__ = (Index("idx_rag_source_type", "source_type"),)

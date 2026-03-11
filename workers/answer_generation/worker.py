@@ -21,10 +21,7 @@ from app.db.models.answer import Answer
 from app.db.models.streaming_session import StreamingSession
 from app.db.models.youtube_token import YouTubeToken
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 1  # seconds
@@ -61,7 +58,7 @@ def main() -> None:
                                 "SELECT content FROM rag_documents "
                                 "ORDER BY embedding <-> CAST(:centroid AS vector) LIMIT 5"
                             ),
-                            {"centroid": vector_to_literal(cluster.centroid_embedding)}
+                            {"centroid": vector_to_literal(cluster.centroid_embedding)},
                         ).fetchall()
                         context = "\n\n".join(r.content for r in rows) if rows else None
 
@@ -69,33 +66,27 @@ def main() -> None:
                         if context:
                             logger.debug("RAG context found, using %d chunks for cluster %s", len(rows), cluster_id)
                         else:
-                            logger.info(
-                                "No RAG context for cluster %s — using general knowledge fallback", cluster_id
-                            )
+                            logger.info("No RAG context for cluster %s — using general knowledge fallback", cluster_id)
                         answer_text = gemini_client.generate_answer(questions_text, context)
 
-                        answer = Answer(
-                            cluster_id=cluster.id,
-                            text=answer_text,
-                            is_posted=False
-                        )
+                        answer = Answer(cluster_id=cluster.id, text=answer_text, is_posted=False)
                         db.add(answer)
                         db.commit()
                         logger.info(f"Answer generated for cluster {cluster_id}, answer_id={answer.id}")
 
                         # Auto-enqueue to YouTube posting if session has YouTube connected
-                        session = db.query(StreamingSession).filter(
-                            StreamingSession.id == cluster.session_id
-                        ).first()
+                        session = db.query(StreamingSession).filter(StreamingSession.id == cluster.session_id).first()
                         if session and session.youtube_video_id:
-                            yt_token = db.query(YouTubeToken).filter(
-                                YouTubeToken.teacher_id == session.teacher_id
-                            ).first()
+                            yt_token = (
+                                db.query(YouTubeToken).filter(YouTubeToken.teacher_id == session.teacher_id).first()
+                            )
                             if yt_token:
-                                manager.enqueue(QUEUE_YOUTUBE_POSTING, YouTubePostingPayload(
-                                    answer_id=str(answer.id),
-                                    session_id=str(session.id)
-                                ).to_dict())
+                                manager.enqueue(
+                                    QUEUE_YOUTUBE_POSTING,
+                                    YouTubePostingPayload(
+                                        answer_id=str(answer.id), session_id=str(session.id)
+                                    ).to_dict(),
+                                )
                                 logger.info(f"Enqueued answer {answer.id} for YouTube posting")
                     finally:
                         db.close()

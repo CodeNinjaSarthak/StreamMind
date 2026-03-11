@@ -24,9 +24,7 @@ async def get_metrics(
         Dict with active_sessions, questions_processed, and answers_generated counts.
     """
     return {
-        "active_sessions": db.query(StreamingSession).filter(
-            StreamingSession.is_active == True
-        ).count(),
+        "active_sessions": db.query(StreamingSession).filter(StreamingSession.is_active == True).count(),
         "questions_processed": db.query(Comment).count(),
         "answers_generated": db.query(Answer).count(),
     }

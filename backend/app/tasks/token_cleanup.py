@@ -20,4 +20,3 @@ async def schedule_token_cleanup() -> None:
     """Schedule token cleanup task."""
     # TODO: Implement scheduling logic
     pass
-

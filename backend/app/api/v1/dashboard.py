@@ -104,15 +104,9 @@ async def approve_answer(
 
     answer, cluster, session = result
     if answer.is_posted:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Already posted"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already posted")
 
-    yt_token = (
-        db.query(YouTubeToken)
-        .filter(YouTubeToken.teacher_id == current_user.id)
-        .first()
-    )
+    yt_token = db.query(YouTubeToken).filter(YouTubeToken.teacher_id == current_user.id).first()
 
     if session.youtube_video_id and yt_token:
         manager = QueueManager()
@@ -181,31 +175,14 @@ async def get_session_stats(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
     total_comments = db.query(Comment).filter(Comment.session_id == session_id).count()
-    questions = (
-        db.query(Comment)
-        .filter(Comment.session_id == session_id, Comment.is_question == True)
-        .count()
-    )
-    answered = (
-        db.query(Comment)
-        .filter(Comment.session_id == session_id, Comment.is_answered == True)
-        .count()
-    )
+    questions = db.query(Comment).filter(Comment.session_id == session_id, Comment.is_question == True).count()
+    answered = db.query(Comment).filter(Comment.session_id == session_id, Comment.is_answered == True).count()
     clusters = db.query(Cluster).filter(Cluster.session_id == session_id).count()
 
-    cluster_ids = [
-        r.id
-        for r in db.query(Cluster.id).filter(Cluster.session_id == session_id).all()
-    ]
-    answers_generated = (
-        db.query(Answer).filter(Answer.cluster_id.in_(cluster_ids)).count()
-        if cluster_ids
-        else 0
-    )
+    cluster_ids = [r.id for r in db.query(Cluster.id).filter(Cluster.session_id == session_id).all()]
+    answers_generated = db.query(Answer).filter(Answer.cluster_id.in_(cluster_ids)).count() if cluster_ids else 0
     answers_posted = (
-        db.query(Answer)
-        .filter(Answer.cluster_id.in_(cluster_ids), Answer.is_posted == True)
-        .count()
+        db.query(Answer).filter(Answer.cluster_id.in_(cluster_ids), Answer.is_posted == True).count()
         if cluster_ids
         else 0
     )

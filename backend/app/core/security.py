@@ -41,16 +41,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True if password matches, False otherwise.
     """
-    return bcrypt.checkpw(
-        plain_password.encode("utf-8"),
-        hashed_password.encode("utf-8")
-    )
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
-def create_access_token(
-    data: dict,
-    expires_delta: Optional[timedelta] = None
-) -> str:
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a JWT access token.
 
     Args:
@@ -64,13 +58,9 @@ def create_access_token(
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=settings.access_token_expire_minutes
-        )
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
-    encoded_jwt = jwt.encode(
-        to_encode, settings.secret_key, algorithm=settings.algorithm
-    )
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
 
 
@@ -84,13 +74,9 @@ def create_refresh_token(data: dict) -> str:
         Encoded JWT refresh token string.
     """
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
-        days=settings.refresh_token_expire_days
-    )
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
     to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc), "type": "refresh"})
-    return jwt.encode(
-        to_encode, settings.secret_key, algorithm=settings.algorithm
-    )
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
 
 def verify_token(token: str) -> Optional[dict]:
@@ -103,17 +89,14 @@ def verify_token(token: str) -> Optional[dict]:
         Decoded token payload if valid, None otherwise.
     """
     try:
-        payload = jwt.decode(
-            token, settings.secret_key, algorithms=[settings.algorithm]
-        )
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         return payload
     except JWTError:
         return None
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
-    db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security_scheme), db: Session = Depends(get_db)
 ) -> Teacher:
     """Get current authenticated user from JWT token.
 
@@ -151,10 +134,7 @@ async def get_current_user(
             raise credentials_exception
 
         if not teacher.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Inactive user"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
 
         return teacher
 
@@ -162,9 +142,7 @@ async def get_current_user(
         raise credentials_exception
 
 
-async def get_current_active_user(
-    current_user: Teacher = Depends(get_current_user)
-) -> Teacher:
+async def get_current_active_user(current_user: Teacher = Depends(get_current_user)) -> Teacher:
     """Get current active user.
 
     Args:
@@ -177,9 +155,5 @@ async def get_current_active_user(
         HTTPException: If user is not active.
     """
     if not current_user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
     return current_user
-

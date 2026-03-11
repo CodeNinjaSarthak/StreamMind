@@ -19,10 +19,7 @@ from workers.common.schemas import AnswerGenerationPayload
 from app.db.models.comment import Comment
 from app.db.models.cluster import Cluster
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 1  # seconds
@@ -47,9 +44,7 @@ def main() -> None:
 
                 for db in get_db_session():
                     try:
-                        comments = db.query(Comment).filter(
-                            Comment.id.in_(comment_ids)
-                        ).all()
+                        comments = db.query(Comment).filter(Comment.id.in_(comment_ids)).all()
                         comments = [c for c in comments if c.embedding is not None]
                         if len(comments) < 2:
                             logger.warning(f"Not enough embedded comments ({len(comments)}) to cluster")
@@ -74,18 +69,20 @@ def main() -> None:
                                     title=closest_comment.text[:200],
                                     centroid_embedding=centroid.tolist(),
                                     comment_count=len(indices),
-                                    similarity_threshold=0.8
+                                    similarity_threshold=0.8,
                                 )
                                 db.add(cluster)
                                 db.flush()
                                 cluster_comments = [comments[j] for j in indices]
                                 for c in cluster_comments:
                                     c.cluster_id = cluster.id
-                                payloads.append(AnswerGenerationPayload(
-                                    cluster_id=str(cluster.id),
-                                    session_id=session_id,
-                                    question_texts=[c.text for c in cluster_comments]
-                                ).to_dict())
+                                payloads.append(
+                                    AnswerGenerationPayload(
+                                        cluster_id=str(cluster.id),
+                                        session_id=session_id,
+                                        question_texts=[c.text for c in cluster_comments],
+                                    ).to_dict()
+                                )
                             db.commit()
                         except Exception:
                             db.rollback()

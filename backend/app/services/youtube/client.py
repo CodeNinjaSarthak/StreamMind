@@ -44,11 +44,7 @@ class YouTubeClient:
         Returns:
             Live chat ID or None if not found.
         """
-        resp = (
-            self._service.videos()
-            .list(part="liveStreamingDetails", id=video_id)
-            .execute()
-        )
+        resp = self._service.videos().list(part="liveStreamingDetails", id=video_id).execute()
         items = resp.get("items", [])
         if not items:
             return None
@@ -63,11 +59,7 @@ class YouTubeClient:
         Returns:
             Dict with title, is_live, live_chat_id or None if not found.
         """
-        resp = (
-            self._service.videos()
-            .list(part="snippet,liveStreamingDetails", id=video_id)
-            .execute()
-        )
+        resp = self._service.videos().list(part="snippet,liveStreamingDetails", id=video_id).execute()
         items = resp.get("items", [])
         if not items:
             return None

@@ -133,4 +133,3 @@ def get_context_logger(name: str, **context: Any) -> LoggerAdapter:
     """
     logger = get_logger(name)
     return LoggerAdapter(logger, context)
-

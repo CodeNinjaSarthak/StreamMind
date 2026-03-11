@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def vector_to_literal(vec: list) -> str:
     """Format vector for pgvector SQL queries."""
-    return '[' + ','.join(str(x) for x in vec) + ']'
+    return "[" + ",".join(str(x) for x in vec) + "]"
 
 
 class GeminiClient:
@@ -37,9 +37,7 @@ class GeminiClient:
             result = self._client.models.embed_content(
                 model=settings.gemini_embedding_model,
                 contents=text,
-                config=types.EmbedContentConfig(
-                    output_dimensionality=768
-                )
+                config=types.EmbedContentConfig(output_dimensionality=768),
             )
             # Get embedding values
             embedding_values = result.embeddings[0].values
@@ -60,14 +58,14 @@ class GeminiClient:
         with self._semaphore:
             prompt = (
                 f'Is this a question? Return JSON only: {{"is_question": bool, "confidence": float 0-1}}\n'
-                f'Comment: {text}'
+                f"Comment: {text}"
             )
-            response = self._client.models.generate_content(
-                model=settings.gemini_model, contents=prompt
-            )
+            response = self._client.models.generate_content(model=settings.gemini_model, contents=prompt)
             raw = response.text.strip().removeprefix("```json").removesuffix("```").strip()
             result = json.loads(raw)
-            logger.debug(f"Classified comment: is_question={result.get('is_question')}, confidence={result.get('confidence')}")
+            logger.debug(
+                f"Classified comment: is_question={result.get('is_question')}, confidence={result.get('confidence')}"
+            )
             return result
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
@@ -96,8 +94,6 @@ class GeminiClient:
                     f"using your general knowledge.\n\n"
                     f"Question(s):\n{question}"
                 )
-            response = self._client.models.generate_content(
-                model=settings.gemini_model, contents=prompt
-            )
+            response = self._client.models.generate_content(model=settings.gemini_model, contents=prompt)
             logger.debug("Answer generated successfully")
             return response.text

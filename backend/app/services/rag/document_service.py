@@ -38,7 +38,7 @@ def _extract_text_docx(content: bytes) -> str:
 
 def _chunk_text(full_text: str) -> List[str]:
     """Split text into overlapping word-based chunks using sentence boundaries."""
-    sentences = re.split(r'(?<=[.!?])\s+', full_text)
+    sentences = re.split(r"(?<=[.!?])\s+", full_text)
     chunks = []
     current_words: List[str] = []
 
@@ -79,7 +79,7 @@ async def upload_document(
         raise HTTPException(status_code=413, detail="File exceeds 10 MB limit")
 
     # Magic byte validation
-    if file.content_type == "application/pdf" and not content.startswith(b'%PDF'):
+    if file.content_type == "application/pdf" and not content.startswith(b"%PDF"):
         raise HTTPException(status_code=400, detail="Invalid PDF file")
 
     if file.content_type == "application/pdf":
