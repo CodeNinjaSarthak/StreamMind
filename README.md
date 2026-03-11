@@ -1,4 +1,4 @@
-# AI Live Doubt Manager
+# AI Powered Live Doubt Manager
 
 A production-grade system that helps teachers manage live YouTube teaching sessions at scale. It polls the YouTube live chat in real time, uses Gemini AI to classify and cluster student questions, generates answers, and delivers them back to the teacher's dashboard over WebSocket — all while optionally posting responses directly into the stream.
 
