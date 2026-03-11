@@ -65,7 +65,7 @@ jobs:
       DATABASE_URL: postgresql://testuser:testpass@localhost:5432/test_db
       REDIS_URL: redis://localhost:6379/0
       SECRET_KEY: ci-test-secret-key
-      ENCRYPTION_KEY: ci-test-encryption-key
+      ENCRYPTION_KEY: ci-test-encryption-key-1234567890
       ALGORITHM: HS256
       GEMINI_API_KEY: dummy-for-tests
       YOUTUBE_CLIENT_ID: dummy
@@ -82,10 +82,6 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r backend/requirements.txt
-
-      - name: Run migrations
-        run: alembic upgrade head
-        working-directory: backend
 
       - name: Run tests
         run: pytest backend/tests workers -v --ignore-glob="*__init__*" || true
