@@ -43,7 +43,6 @@ export function YouTubePanel({ token }) {
         }
       }, { once: true });
 
-      // Fallback: if popup is closed without completing
       pollIntervalRef.current = setInterval(() => {
         if (popup && popup.closed) {
           clearInterval(pollIntervalRef.current);
@@ -74,7 +73,7 @@ export function YouTubePanel({ token }) {
     <section className="panel">
       <h2>YouTube</h2>
       {loading ? (
-        <p>Loading...</p>
+        <p className="hint">Loading…</p>
       ) : error ? (
         <p className="error-msg">{error}</p>
       ) : (
@@ -87,19 +86,23 @@ export function YouTubePanel({ token }) {
           {ytStatus?.connected ? (
             <>
               {ytStatus.expires_at && (
-                <p className="hint">Token expires: {new Date(ytStatus.expires_at).toLocaleString()}</p>
+                <p className="hint">Expires: {new Date(ytStatus.expires_at).toLocaleString()}</p>
               )}
               <button
                 onClick={handleDisconnect}
                 className="btn btn-danger-sm"
                 disabled={actionLoading}
               >
-                {actionLoading ? 'Disconnecting...' : 'Disconnect'}
+                {actionLoading ? 'Disconnecting…' : 'Disconnect'}
               </button>
             </>
           ) : (
-            <button onClick={handleConnect} className="btn" disabled={actionLoading}>
-              {actionLoading ? 'Connecting...' : 'Connect YouTube'}
+            <button
+              onClick={handleConnect}
+              className="btn btn-primary"
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Connecting…' : 'Connect YouTube'}
             </button>
           )}
         </>

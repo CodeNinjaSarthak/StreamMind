@@ -18,10 +18,10 @@ export function DocumentUpload({ sessionId, token }) {
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [pct, setPct] = useState(0);
+  const [sectionExpanded, setSectionExpanded] = useState(false);
   const fileRef = useRef(null);
   const uploadXhrRef = useRef(null);
 
-  // Fetch docs for current session — stale closure guard
   useEffect(() => {
     let stale = false;
     async function run() {
@@ -39,7 +39,6 @@ export function DocumentUpload({ sessionId, token }) {
     return () => { stale = true; };
   }, [sessionId, token]);
 
-  // Abort in-flight upload when session changes
   useEffect(() => {
     return () => {
       if (uploadXhrRef.current) {
@@ -72,7 +71,6 @@ export function DocumentUpload({ sessionId, token }) {
         const n = result.chunks_created;
         showToast(`Uploaded — ${n} chunk${n !== 1 ? 's' : ''} indexed.`, 'success');
         if (fileRef.current) fileRef.current.value = '';
-        // Refetch docs for this session
         const data = await getDocuments({ token, sessionId });
         setDocs(data || []);
       }
@@ -104,52 +102,50 @@ export function DocumentUpload({ sessionId, token }) {
 
   return (
     <section className="panel">
-      <h2>RAG Documents</h2>
-      <p className="hint" style={{ marginBottom: 10 }}>
-        Upload files to give the AI extra context when generating answers.
-      </p>
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: sectionExpanded ? 10 : 0 }}
+        onClick={() => setSectionExpanded(e => !e)}
+      >
+        <span className="sidebar-section-title" style={{ marginBottom: 0 }}>
+          RAG DOCS {docs.length > 0 && `(${docs.length})`}
+        </span>
+        <span style={{ color: 'var(--color-muted)', fontSize: 10, fontFamily: 'var(--font-display)' }}>
+          {sectionExpanded ? '▲' : '▼'}
+        </span>
+      </div>
 
-      <form onSubmit={handleUpload}>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".pdf,.docx,.txt"
-          style={{ display: 'block', marginBottom: 8, fontSize: 13, width: '100%' }}
-        />
-        {pct > 0 && pct < 100 && (
-          <div style={{ background: 'var(--color-border)', borderRadius: 4, height: 4, margin: '6px 0' }}>
-            <div style={{ width: `${pct}%`, height: '100%', background: 'var(--color-primary)', borderRadius: 4, transition: 'width 0.2s' }} />
-          </div>
-        )}
-        <button type="submit" className="btn btn-primary" disabled={uploading}>
-          {uploading ? 'Uploading...' : 'Upload'}
-        </button>
-      </form>
+      {sectionExpanded && (
+        <>
+          <p className="hint" style={{ marginBottom: 8, marginTop: 6 }}>
+            Upload files (.pdf, .docx, .txt) to give the AI context.
+          </p>
 
-      <div style={{ marginTop: 14 }}>
-        {isLoadingInitial ? (
-          <div className="skeleton-list">
-            {[1, 2].map(i => <Skeleton key={i} className="sk-doc-row" />)}
-          </div>
-        ) : docs.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-state-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14,2 14,8 20,8"/>
-                <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>
-              </svg>
-            </span>
-            <p className="empty-state-title">No documents uploaded</p>
-            <p className="empty-state-description">Upload PDFs to give the AI context when answering</p>
-          </div>
-        ) : (
-          <>
-            <p className="hint" style={{ marginBottom: 6 }}>
-              Indexed documents ({docs.length}):
-            </p>
-            <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-              {docs.map(doc => (
+          <form onSubmit={handleUpload}>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.docx,.txt"
+              style={{ display: 'block', marginBottom: 8, fontSize: 11, width: '100%', color: 'var(--color-muted)' }}
+            />
+            {pct > 0 && pct < 100 && (
+              <div style={{ background: 'var(--color-border)', height: 3, margin: '6px 0' }}>
+                <div style={{ width: `${pct}%`, height: '100%', background: 'var(--color-accent)', transition: 'width 0.2s' }} />
+              </div>
+            )}
+            <button type="submit" className="btn btn-primary" disabled={uploading}>
+              {uploading ? 'Uploading…' : 'Upload'}
+            </button>
+          </form>
+
+          <div style={{ marginTop: 12 }}>
+            {isLoadingInitial ? (
+              <div className="skeleton-list">
+                {[1, 2].map(i => <Skeleton key={i} className="sk-doc-row" />)}
+              </div>
+            ) : docs.length === 0 ? (
+              <p className="hint" style={{ textAlign: 'center', paddingTop: 8 }}>No documents yet</p>
+            ) : (
+              docs.map(doc => (
                 <div
                   key={doc.id}
                   style={{
@@ -157,14 +153,14 @@ export function DocumentUpload({ sessionId, token }) {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: 8,
-                    padding: '6px 0',
+                    padding: '5px 0',
                     borderBottom: '1px solid var(--color-border)',
                   }}
                 >
-                  <div style={{ minWidth: 0 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
                     <span
                       style={{
-                        fontSize: 12,
+                        fontSize: 11,
                         color: 'var(--color-text)',
                         display: 'block',
                         overflow: 'hidden',
@@ -175,9 +171,8 @@ export function DocumentUpload({ sessionId, token }) {
                     >
                       {doc.filename || doc.title}
                     </span>
-                    <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>
+                    <span style={{ fontSize: 10, color: 'var(--color-muted)', fontFamily: 'var(--font-display)' }}>
                       {formatBytes(doc.file_size_bytes)}
-                      {doc.created_at && ` · ${new Date(doc.created_at).toLocaleDateString()}`}
                     </span>
                   </div>
                   <button
@@ -185,14 +180,14 @@ export function DocumentUpload({ sessionId, token }) {
                     onClick={() => handleDelete(doc.id)}
                     style={{ flexShrink: 0 }}
                   >
-                    Delete
+                    ✕
                   </button>
                 </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
     </section>
   );
 }
