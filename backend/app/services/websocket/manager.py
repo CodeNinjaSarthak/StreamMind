@@ -283,8 +283,3 @@ class WebSocketManager:
 
 
 manager = WebSocketManager()
-        """
-        return sum(len(conns) for conns in self.active_connections.values())
-
-
-manager = WebSocketManager()

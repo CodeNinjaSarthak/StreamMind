@@ -11,7 +11,6 @@ _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 sys.path.insert(0, _project_root)
 sys.path.insert(0, os.path.join(_project_root, "backend"))
 
-import redis as redis_lib
 from app.db.models.comment import Comment
 from app.services.gemini.client import GeminiClient
 
@@ -34,8 +33,6 @@ def main() -> None:
     logger.info("Starting embeddings worker...")
     gemini_client = GeminiClient()
     manager = QueueManager()
-    redis_client = redis_lib.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"))
-    threshold = int(os.getenv("CLUSTERING_THRESHOLD", "5"))
     task = None
 
     try:
@@ -59,28 +56,13 @@ def main() -> None:
                         embedding = gemini_client.generate_embedding(comment.text)
                         comment.embedding = embedding
                         db.commit()
-                        # Atomic clustering trigger via Redis INCR
-                        count = redis_client.incr(f"question_count:{comment.session_id}")
-                        redis_client.expire(f"question_count:{comment.session_id}", 3600)
-                        if count == threshold:
-                            question_ids = [
-                                str(c.id)
-                                for c in db.query(Comment)
-                                .filter(
-                                    Comment.session_id == comment.session_id,
-                                    Comment.is_question.is_(True),
-                                    Comment.embedding.isnot(None),
-                                    Comment.cluster_id.is_(None),
-                                )
-                                .all()
-                            ]
-                            manager.enqueue(
-                                QUEUE_CLUSTERING,
-                                ClusteringPayload(
-                                    session_id=str(comment.session_id), comment_ids=question_ids, trigger_type="auto"
-                                ).to_dict(),
-                            )
-                            redis_client.delete(f"question_count:{comment.session_id}")
+                        manager.enqueue(
+                            QUEUE_CLUSTERING,
+                            ClusteringPayload(
+                                session_id=str(comment.session_id),
+                                comment_id=str(comment.id),
+                            ).to_dict(),
+                        )
                         logger.info(f"Embedding stored for comment {comment_id}")
                     finally:
                         db.close()

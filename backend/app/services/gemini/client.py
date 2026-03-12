@@ -100,3 +100,20 @@ class GeminiClient:
             response = self._client.models.generate_content(model=settings.gemini_model, contents=prompt)
             logger.debug("Answer generated successfully")
             return response.text
+
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
+    def summarize_cluster(self, questions: list[str]) -> str:
+        """Summarize a cluster of questions in 8 words or less."""
+        with self._semaphore:
+            joined = "\n".join(f"- {q}" for q in questions)
+            prompt = (
+                "Summarize what these questions are asking in 8 words or less. "
+                "Return only the summary, no punctuation.\n\n"
+                f"{joined}"
+            )
+            response = self._client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(max_output_tokens=20),
+            )
+            return response.text.strip()

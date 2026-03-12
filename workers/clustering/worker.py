@@ -1,4 +1,4 @@
-"""Clustering worker for grouping similar comments."""
+"""Online nearest-centroid clustering worker."""
 
 import logging
 import os
@@ -14,7 +14,8 @@ sys.path.insert(0, os.path.join(_project_root, "backend"))
 import numpy as np
 from app.db.models.cluster import Cluster
 from app.db.models.comment import Comment
-from sklearn.cluster import KMeans
+from app.services.gemini.client import GeminiClient
+from sqlalchemy import text
 
 from workers.common.db import get_db_session
 from workers.common.queue import (
@@ -28,12 +29,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 1  # seconds
+SIMILARITY_THRESHOLD = 0.65
+ANSWER_GENERATION_MILESTONES = {3, 10, 25}
 
 
 def main() -> None:
     """Main entry point for clustering worker."""
     logger.info("Starting clustering worker...")
     manager = QueueManager()
+    gemini_client = GeminiClient()
     task = None
 
     try:
@@ -44,57 +48,103 @@ def main() -> None:
                     time.sleep(POLL_INTERVAL)
                     continue
 
+                comment_id = task.get("comment_id")
                 session_id = task.get("session_id")
-                comment_ids = task.get("comment_ids", [])
 
                 for db in get_db_session():
                     try:
-                        comments = db.query(Comment).filter(Comment.id.in_(comment_ids)).all()
-                        comments = [c for c in comments if c.embedding is not None]
-                        if len(comments) < 2:
-                            logger.warning(f"Not enough embedded comments ({len(comments)}) to cluster")
+                        comment = db.query(Comment).filter(Comment.id == comment_id).first()
+                        if not comment:
+                            logger.warning(f"Comment {comment_id} not found, skipping")
+                            break
+                        if comment.embedding is None:
+                            logger.warning(f"Comment {comment_id} has no embedding, skipping")
+                            break
+                        if not comment.is_question:
+                            logger.info(f"Comment {comment_id} is not a question, skipping")
                             break
 
-                        embeddings = np.array([c.embedding for c in comments])
-                        k = min(max(2, len(comments) // 4), 10)
-                        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10).fit(embeddings)
+                        emb_literal = "[" + ",".join(map(str, comment.embedding)) + "]"
 
-                        payloads = []
-                        try:
-                            for i in range(k):
-                                indices = np.where(kmeans.labels_ == i)[0]
-                                if len(indices) == 0:
-                                    continue
-                                centroid = kmeans.cluster_centers_[i]
-                                cluster_embeddings = embeddings[indices]
-                                distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
-                                closest_comment = comments[indices[np.argmin(distances)]]
-                                cluster = Cluster(
-                                    session_id=session_id,
-                                    title=closest_comment.text[:200],
-                                    centroid_embedding=centroid.tolist(),
-                                    comment_count=len(indices),
-                                    similarity_threshold=0.8,
-                                )
-                                db.add(cluster)
-                                db.flush()
-                                cluster_comments = [comments[j] for j in indices]
-                                for c in cluster_comments:
-                                    c.cluster_id = cluster.id
-                                payloads.append(
-                                    AnswerGenerationPayload(
-                                        cluster_id=str(cluster.id),
-                                        session_id=session_id,
-                                        question_texts=[c.text for c in cluster_comments],
-                                    ).to_dict()
-                                )
-                            db.commit()
-                        except Exception:
-                            db.rollback()
-                            raise
-                        for payload in payloads:
-                            manager.enqueue(QUEUE_ANSWER_GENERATION, payload)
-                        logger.info(f"Created {k} clusters for session {session_id}")
+                        row = db.execute(
+                            text(
+                                """
+                                SELECT id, centroid_embedding, comment_count,
+                                       1 - (centroid_embedding <=> CAST(:emb AS vector)) AS similarity
+                                FROM clusters
+                                WHERE session_id = :sid
+                                ORDER BY centroid_embedding <=> CAST(:emb AS vector)
+                                LIMIT 1
+                                """
+                            ),
+                            {"emb": emb_literal, "sid": str(comment.session_id)},
+                        ).fetchone()
+
+                        if row is not None and row.similarity >= SIMILARITY_THRESHOLD:
+                            # Join existing cluster
+                            is_new_cluster = False
+                            cluster = db.query(Cluster).filter(Cluster.id == row.id).first()
+                            n = cluster.comment_count
+                            new_vec = (np.array(cluster.centroid_embedding) * n + np.array(comment.embedding)) / (n + 1)
+                            new_vec = new_vec / np.linalg.norm(new_vec)
+                            cluster.centroid_embedding = new_vec.tolist()
+                            cluster.comment_count = n + 1
+                            comment.cluster_id = cluster.id
+                            logger.info(
+                                f"Comment {comment_id} joined cluster {cluster.id} "
+                                f"(similarity={row.similarity:.3f}, count={cluster.comment_count})"
+                            )
+                        else:
+                            # Create new cluster
+                            is_new_cluster = True
+                            cluster = Cluster(
+                                session_id=comment.session_id,
+                                title=comment.text[:100] + " [pending]",
+                                centroid_embedding=comment.embedding,
+                                comment_count=1,
+                            )
+                            db.add(cluster)
+                            db.flush()
+                            comment.cluster_id = cluster.id
+                            logger.info(f"Created new cluster {cluster.id} for comment {comment_id}")
+
+                        db.commit()
+                        db.refresh(cluster)
+
+                        cluster_comments = (
+                            db.query(Comment)
+                            .filter(
+                                Comment.cluster_id == cluster.id,
+                                Comment.is_question.is_(True),
+                            )
+                            .all()
+                        )
+
+                        # Summarize at 3 comments
+                        if cluster.comment_count == 3:
+                            try:
+                                summary = gemini_client.summarize_cluster([c.text for c in cluster_comments])
+                                cluster.title = summary
+                                db.commit()
+                                logger.info(f"Cluster {cluster.id} title updated: {summary!r}")
+                            except Exception as e:
+                                logger.error(f"Failed to summarize cluster {cluster.id}: {e}")
+
+                        # Enqueue answer generation on new cluster or milestones
+                        if is_new_cluster or cluster.comment_count in ANSWER_GENERATION_MILESTONES:
+                            manager.enqueue(
+                                QUEUE_ANSWER_GENERATION,
+                                AnswerGenerationPayload(
+                                    cluster_id=str(cluster.id),
+                                    session_id=str(comment.session_id),
+                                    question_texts=[c.text for c in cluster_comments],
+                                ).to_dict(),
+                            )
+                            logger.info(
+                                f"Enqueued answer generation for cluster {cluster.id} "
+                                f"(new={is_new_cluster}, count={cluster.comment_count})"
+                            )
+
                     finally:
                         db.close()
                 task = None
