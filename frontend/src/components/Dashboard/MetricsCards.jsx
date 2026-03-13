@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getSessionStats } from '../../services/api';
 import { Skeleton } from '../Skeleton';
 
@@ -8,6 +8,7 @@ export function MetricsCards({ sessionId, token, wsMessages }) {
   const [stats, setStats] = useState(null);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
   const [error, setError] = useState(null);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     let stale = false;
@@ -32,15 +33,19 @@ export function MetricsCards({ sessionId, token, wsMessages }) {
     return () => { stale = true; };
   }, [sessionId, token]);
 
-  // WS-triggered refetch — does NOT set isLoadingInitial
+  // WS-triggered refetch — debounced, does NOT set isLoadingInitial
   useEffect(() => {
     if (!sessionId || !wsMessages || wsMessages.length === 0) return;
     const last = wsMessages[wsMessages.length - 1];
     if (last && REFETCH_EVENTS.has(last.type)) {
-      getSessionStats(sessionId, token)
-        .then(data => { if (data) setStats(data); })
-        .catch(() => {});
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        getSessionStats(sessionId, token)
+          .then(data => { if (data) setStats(data); })
+          .catch(() => {});
+      }, 500);
     }
+    return () => clearTimeout(debounceRef.current);
   }, [wsMessages]);
 
   return (

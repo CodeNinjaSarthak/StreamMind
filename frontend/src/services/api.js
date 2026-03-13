@@ -149,6 +149,9 @@ export const deleteDocument = (documentId, token) =>
 export const getClusterComments = (clusterId, token) =>
   apiFetch(`/api/v1/clusters/${clusterId}/comments`, {}, token);
 
+export const getRepresentativeQuestion = (clusterId, token) =>
+  apiFetch(`/api/v1/dashboard/clusters/${clusterId}/representative`, {}, token);
+
 // Profile & password
 export const updateProfile = (data, token) =>
   apiFetch('/api/v1/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }, token);

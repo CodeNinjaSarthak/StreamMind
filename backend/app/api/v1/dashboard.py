@@ -217,3 +217,48 @@ async def get_session_stats(
         "answers_generated": answers_generated,
         "answers_posted": answers_posted,
     }
+
+
+@router.get("/clusters/{cluster_id}/representative")
+async def get_representative_question(
+    cluster_id: UUID,
+    current_user: Teacher = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Return the comment whose embedding is closest to the cluster centroid."""
+    from sqlalchemy import text as sa_text
+
+    cluster = (
+        db.query(Cluster)
+        .join(StreamingSession, Cluster.session_id == StreamingSession.id)
+        .filter(
+            Cluster.id == cluster_id,
+            StreamingSession.teacher_id == current_user.id,
+        )
+        .first()
+    )
+    if not cluster:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+    if cluster.centroid_embedding is None:
+        raise HTTPException(status_code=404, detail="No centroid available")
+
+    centroid_str = "[" + ",".join(str(v) for v in cluster.centroid_embedding) + "]"
+
+    row = db.execute(
+        sa_text("""
+            SELECT c.id, c.text,
+                   1 - (c.embedding <=> CAST(:centroid AS vector)) AS similarity
+            FROM comments c
+            WHERE c.cluster_id = :cluster_id
+              AND c.is_question = TRUE
+              AND c.embedding IS NOT NULL
+            ORDER BY c.embedding <=> CAST(:centroid AS vector)
+            LIMIT 1
+        """),
+        {"centroid": centroid_str, "cluster_id": str(cluster_id)},
+    ).first()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="No representative question found")
+
+    return {"comment_id": str(row.id), "text": row.text, "similarity": float(row.similarity)}

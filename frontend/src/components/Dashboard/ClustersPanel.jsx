@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getSessionClusters, approveAnswer, editAnswer, getClusterComments } from '../../services/api';
+import { getSessionClusters, approveAnswer, editAnswer, getClusterComments, getRepresentativeQuestion } from '../../services/api';
 import { showToast } from '../../hooks/useToast';
 import { ClusterDetailsModal } from './ClusterDetailsModal';
 import { Skeleton } from '../Skeleton';
@@ -18,7 +18,10 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
   const [selectedCluster, setSelectedCluster] = useState(null);
   const [modalComments, setModalComments] = useState(null);
   const [expandedIds, setExpandedIds] = useState(new Set());
+  const [repQuestions, setRepQuestions] = useState({});
   const commentCache = useRef(new Map());
+  const debounceRef = useRef(null);
+  const fetchedClusterIds = useRef(new Set());
 
   async function fetchClusters() {
     const data = await getSessionClusters(sessionId, token);
@@ -59,20 +62,41 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
     return () => { approveFirstRef.current = null; };
   }, [clusters, approveFirstRef]);
 
-  // WS-triggered refetch
+  // WS-triggered refetch — debounced
   useEffect(() => {
     if (!wsMessages || wsMessages.length === 0) return;
     const last = wsMessages[wsMessages.length - 1];
     if (last && REFETCH_EVENTS.has(last.type)) {
       const affectedId = last.data?.cluster_id ?? last.data?.id ?? null;
-      if (affectedId) {
-        commentCache.current.delete(affectedId);
-      } else {
-        commentCache.current.clear();
-      }
-      fetchClusters().catch(() => {});
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        if (affectedId) commentCache.current.delete(affectedId);
+        else commentCache.current.clear();
+        fetchClusters().catch(() => {});
+      }, 500);
     }
+    return () => clearTimeout(debounceRef.current);
   }, [wsMessages]);
+
+  // Reset repQuestions on session change
+  useEffect(() => {
+    fetchedClusterIds.current = new Set();
+    setRepQuestions({});
+  }, [sessionId]);
+
+  // Fetch representative question for each cluster (once per cluster id)
+  useEffect(() => {
+    clusters.forEach(cluster => {
+      if (cluster.comment_count <= 1) return;
+      if (fetchedClusterIds.current.has(cluster.id)) return;
+      fetchedClusterIds.current.add(cluster.id);
+      getRepresentativeQuestion(cluster.id, token)
+        .then(data => {
+          if (data?.text) setRepQuestions(prev => ({ ...prev, [cluster.id]: data.text }));
+        })
+        .catch(() => {});
+    });
+  }, [clusters]);
 
   function toggleExpand(id) {
     setExpandedIds(prev => {
@@ -236,6 +260,12 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
                       ▼
                     </span>
                   </div>
+                  {repQuestions[cluster.id] && (
+                    <div className="cluster-rep-question">
+                      <span className="cluster-rep-label">Most asked:</span>
+                      {repQuestions[cluster.id]}
+                    </div>
+                  )}
 
                   <div className={`cluster-body${isExpanded ? ' expanded' : ''}`}>
                     <div className="cluster-body-inner">
