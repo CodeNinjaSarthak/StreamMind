@@ -1,5 +1,6 @@
 """Online nearest-centroid clustering worker."""
 
+import json
 import logging
 import os
 import sys
@@ -15,6 +16,7 @@ import numpy as np
 from app.db.models.cluster import Cluster
 from app.db.models.comment import Comment
 from app.services.gemini.client import GeminiClient
+from app.services.websocket.events import event_service
 from sqlalchemy import text
 
 from workers.common.db import get_db_session
@@ -23,6 +25,7 @@ from workers.common.queue import (
     QUEUE_CLUSTERING,
     QueueManager,
 )
+from workers.common.redis import get_redis_client
 from workers.common.schemas import AnswerGenerationPayload
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -38,6 +41,7 @@ def main() -> None:
     logger.info("Starting clustering worker...")
     manager = QueueManager()
     gemini_client = GeminiClient()
+    redis_client = get_redis_client()
     task = None
 
     try:
@@ -110,6 +114,20 @@ def main() -> None:
 
                         db.commit()
                         db.refresh(cluster)
+
+                        # Publish event for WebSocket relay
+                        cluster_data = {
+                            "id": str(cluster.id),
+                            "title": cluster.title,
+                            "comment_count": cluster.comment_count,
+                        }
+                        if is_new_cluster:
+                            event = event_service.create_cluster_created_event(cluster_data)
+                        else:
+                            event = event_service.create_cluster_updated_event(cluster_data)
+                        redis_client.publish(
+                            f"ws:{comment.session_id}", json.dumps(event)
+                        )
 
                         cluster_comments = (
                             db.query(Comment)

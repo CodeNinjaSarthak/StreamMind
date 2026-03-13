@@ -1,5 +1,6 @@
 """Classification worker for processing comments."""
 
+import json
 import logging
 import os
 import sys
@@ -14,6 +15,7 @@ sys.path.insert(0, os.path.join(_project_root, "backend"))
 
 from app.db.models.comment import Comment
 from app.services.gemini.client import GeminiClient
+from app.services.websocket.events import event_service
 
 from workers.common.db import get_db_session
 from workers.common.queue import (
@@ -21,6 +23,7 @@ from workers.common.queue import (
     QUEUE_EMBEDDING,
     QueueManager,
 )
+from workers.common.redis import get_redis_client
 from workers.common.schemas import EmbeddingPayload
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -34,6 +37,7 @@ def main() -> None:
     logger.info("Starting classification worker...")
     gemini_client = GeminiClient()
     manager = QueueManager()
+    redis_client = get_redis_client()
     task = None
 
     try:
@@ -60,6 +64,15 @@ def main() -> None:
                                 QUEUE_EMBEDDING,
                                 EmbeddingPayload(comment_id=str(comment.id), text=comment.text).to_dict(),
                             )
+
+                        # Publish event for WebSocket relay
+                        event = event_service.create_comment_classified_event(
+                            str(comment.id), result["is_question"], result["confidence"]
+                        )
+                        redis_client.publish(
+                            f"ws:{comment.session_id}", json.dumps(event)
+                        )
+
                         logger.info(
                             "Classification complete",
                             extra={

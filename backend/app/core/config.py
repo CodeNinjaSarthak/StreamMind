@@ -100,6 +100,10 @@ class Settings(BaseSettings):
     gemini_embedding_model: str = "gemini-embedding-001"
     clustering_threshold: int = Field(default=5, description="Questions needed to trigger clustering")
 
+    # Mock / Testing
+    mock_youtube: bool = False
+    mock_message_interval: float = 2.0
+
     # Logging
     log_level: str = "INFO"
     log_json: bool = False

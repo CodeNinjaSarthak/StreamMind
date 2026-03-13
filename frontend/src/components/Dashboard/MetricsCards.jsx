@@ -43,7 +43,7 @@ export function MetricsCards({ sessionId, token, wsMessages }) {
         getSessionStats(sessionId, token)
           .then(data => { if (data) setStats(data); })
           .catch(() => {});
-      }, 500);
+      }, 1000);
     }
     return () => clearTimeout(debounceRef.current);
   }, [wsMessages]);

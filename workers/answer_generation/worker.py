@@ -1,5 +1,6 @@
 """Answer generation worker for creating AI answers."""
 
+import json
 import logging
 import os
 import sys
@@ -19,6 +20,7 @@ from app.services.gemini.client import (
     GeminiClient,
     vector_to_literal,
 )
+from app.services.websocket.events import event_service
 from sqlalchemy import text
 
 from workers.common.db import get_db_session
@@ -27,6 +29,7 @@ from workers.common.queue import (
     QUEUE_YOUTUBE_POSTING,
     QueueManager,
 )
+from workers.common.redis import get_redis_client
 from workers.common.schemas import YouTubePostingPayload
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -40,6 +43,7 @@ def main() -> None:
     logger.info("Starting answer generation worker...")
     gemini_client = GeminiClient()
     manager = QueueManager()
+    redis_client = get_redis_client()
     task = None
 
     try:
@@ -81,6 +85,15 @@ def main() -> None:
                         db.add(answer)
                         db.commit()
                         logger.info(f"Answer generated for cluster {cluster_id}, answer_id={answer.id}")
+
+                        # Publish event for WebSocket relay
+                        event = event_service.create_answer_ready_event({
+                            "answer_id": str(answer.id),
+                            "cluster_id": str(cluster.id),
+                        })
+                        redis_client.publish(
+                            f"ws:{cluster.session_id}", json.dumps(event)
+                        )
 
                         # Auto-enqueue to YouTube posting if session has YouTube connected
                         session = db.query(StreamingSession).filter(StreamingSession.id == cluster.session_id).first()

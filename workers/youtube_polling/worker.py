@@ -4,6 +4,7 @@ Polls all active sessions in parallel using ThreadPoolExecutor.
 Each thread gets its own DB session and Redis client.
 """
 
+import json
 import logging
 import os
 import signal
@@ -28,6 +29,7 @@ from app.core.encryption import (
 from app.db.models.comment import Comment
 from app.db.models.streaming_session import StreamingSession
 from app.db.models.youtube_token import YouTubeToken
+from app.services.websocket.events import event_service
 from app.services.youtube.client import YouTubeClient
 from app.services.youtube.oauth import YouTubeOAuthService
 from app.services.youtube.quota import YouTubeQuotaService
@@ -157,6 +159,16 @@ def poll_session(session_id: str, manager: QueueManager) -> None:
                         session_id=str(session.id),
                     ).to_dict(),
                 )
+
+                # Publish event for WebSocket relay
+                ws_event = event_service.create_comment_created_event({
+                    "id": str(comment.id),
+                    "text": comment.text,
+                    "author_name": comment.author_name,
+                    "session_id": str(session.id),
+                })
+                redis_client.publish(f"ws:{session.id}", json.dumps(ws_event))
+
                 fetched += 1
 
             db.commit()
@@ -218,4 +230,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    from app.core.config import settings
+
+    if settings.mock_youtube:
+        from workers.youtube_polling.mock_worker import main as mock_main
+
+        mock_main()
+    else:
+        main()

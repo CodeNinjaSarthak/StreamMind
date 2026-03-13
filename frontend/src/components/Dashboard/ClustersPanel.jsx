@@ -73,7 +73,7 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
         if (affectedId) commentCache.current.delete(affectedId);
         else commentCache.current.clear();
         fetchClusters().catch(() => {});
-      }, 500);
+      }, 1000);
     }
     return () => clearTimeout(debounceRef.current);
   }, [wsMessages]);
