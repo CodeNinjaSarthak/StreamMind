@@ -149,7 +149,7 @@ async def approve_answer(
     return answer
 
 
-@router.post("/answers/{answer_id}/edit", response_model=AnswerResponse)
+@router.patch("/answers/{answer_id}", response_model=AnswerResponse)
 async def edit_answer(
     answer_id: UUID,
     payload: AnswerUpdate,
