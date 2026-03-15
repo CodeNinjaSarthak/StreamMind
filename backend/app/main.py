@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """FastAPI application main entry point."""
 
 import asyncio
+import glob
 import logging
 import os
 
@@ -30,7 +31,10 @@ from app.core.metrics import metrics_endpoint
 from app.core.middleware import RequestContextMiddleware
 from app.core.rate_limit_middleware import RateLimitMiddleware
 from app.services.websocket.manager import manager
-from fastapi import FastAPI
+from fastapi import (
+    FastAPI,
+    Request,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -96,11 +100,8 @@ async def health() -> dict:
 
 
 @app.get("/metrics")
-async def metrics():
+async def metrics(request: Request):
     """Prometheus metrics endpoint."""
-    from starlette.requests import Request
-
-    request = Request(scope={"type": "http"})
     return await metrics_endpoint(request)
 
 
@@ -111,6 +112,12 @@ _relay_task: asyncio.Task | None = None
 async def startup_event():
     """Application startup event."""
     global _relay_task
+
+    # Clear stale multiprocess metric files from previous runs
+    multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus_multiproc")
+    for f in glob.glob(os.path.join(multiproc_dir, "*.db")):
+        os.unlink(f)
+
     logger.info(
         f"Starting {settings.app_name} v{settings.app_version}",
         extra={"environment": settings.environment, "debug": settings.debug},

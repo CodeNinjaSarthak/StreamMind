@@ -12,7 +12,11 @@ _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 sys.path.insert(0, _project_root)
 sys.path.insert(0, os.path.join(_project_root, "backend"))
 
-import numpy as np
+from workers.common.prometheus_setup import setup_multiproc_dir  # noqa: E402
+
+setup_multiproc_dir()
+
+import numpy as np  # noqa: E402
 from app.core.config import settings
 from app.db.models.cluster import Cluster
 from app.db.models.comment import Comment
@@ -21,6 +25,10 @@ from app.services.websocket.events import event_service
 from sqlalchemy import text
 
 from workers.common.db import get_db_session
+from workers.common.metrics import (  # noqa: E402
+    record_processing,
+    update_queue_depths,
+)
 from workers.common.queue import (
     QUEUE_ANSWER_GENERATION,
     QUEUE_CLUSTERING,
@@ -49,9 +57,11 @@ def main() -> None:
             try:
                 task = manager.dequeue(QUEUE_CLUSTERING)
                 if task is None:
+                    update_queue_depths(manager)
                     time.sleep(POLL_INTERVAL)
                     continue
 
+                proc_start = time.time()
                 comment_id = task.get("comment_id")
                 session_id = task.get("session_id")
 
@@ -163,11 +173,13 @@ def main() -> None:
 
                     finally:
                         db.close()
+                record_processing("clustering", time.time() - proc_start, True)
                 task = None
 
             except Exception as e:
                 logger.error(f"Worker error: {e}", exc_info=True)
                 if task:
+                    record_processing("clustering", time.time() - proc_start, False)
                     manager.retry(QUEUE_CLUSTERING, task)
                     task = None
                 time.sleep(POLL_INTERVAL)

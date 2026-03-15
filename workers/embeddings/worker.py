@@ -12,11 +12,19 @@ _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 sys.path.insert(0, _project_root)
 sys.path.insert(0, os.path.join(_project_root, "backend"))
 
-from app.db.models.comment import Comment
+from workers.common.prometheus_setup import setup_multiproc_dir  # noqa: E402
+
+setup_multiproc_dir()
+
+from app.db.models.comment import Comment  # noqa: E402
 from app.services.gemini.client import GeminiClient
 from app.services.websocket.events import event_service
 
 from workers.common.db import get_db_session
+from workers.common.metrics import (  # noqa: E402
+    record_processing,
+    update_queue_depths,
+)
 from workers.common.queue import (
     QUEUE_CLUSTERING,
     QUEUE_EMBEDDING,
@@ -44,9 +52,11 @@ def main() -> None:
             try:
                 task = manager.dequeue(QUEUE_EMBEDDING)
                 if task is None:
+                    update_queue_depths(manager)
                     time.sleep(POLL_INTERVAL)
                     continue
 
+                proc_start = time.time()
                 comment_id = task.get("comment_id")
                 for db in get_db_session():
                     try:
@@ -74,11 +84,13 @@ def main() -> None:
                         logger.info(f"Embedding stored for comment {comment_id}")
                     finally:
                         db.close()
+                record_processing("embeddings", time.time() - proc_start, True)
                 task = None
 
             except Exception as e:
                 logger.error(f"Worker error: {e}", exc_info=True)
                 if task:
+                    record_processing("embeddings", time.time() - proc_start, False)
                     manager.retry(QUEUE_EMBEDDING, task)
                     task = None
                 time.sleep(POLL_INTERVAL)
