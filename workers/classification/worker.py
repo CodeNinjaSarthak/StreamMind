@@ -23,6 +23,7 @@ from app.services.websocket.events import event_service
 
 from workers.common.db import get_db_session
 from workers.common.metrics import (  # noqa: E402
+    gemini_circuit_state,
     record_processing,
     update_queue_depths,
 )
@@ -47,6 +48,13 @@ def main() -> None:
     manager = QueueManager()
     redis_client = get_redis_client()
     task = None
+
+    # Wire circuit breaker state into Prometheus
+    _CB_STATE_MAP = {"closed": 0, "half_open": 1, "open": 2}
+    gemini_circuit_state.labels(worker_name="classification").set(0)
+    gemini_client._circuit_breaker._state_change_callback = lambda state: gemini_circuit_state.labels(
+        worker_name="classification"
+    ).set(_CB_STATE_MAP.get(state, 0))
 
     try:
         while True:

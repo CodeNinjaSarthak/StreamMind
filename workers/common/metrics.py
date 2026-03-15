@@ -53,6 +53,13 @@ queue_depth = Gauge(
     multiprocess_mode="liveall",
 )
 
+gemini_circuit_state = Gauge(
+    "gemini_circuit_state",
+    "Gemini circuit breaker state (0=closed, 1=half_open, 2=open)",
+    ["worker_name"],
+    multiprocess_mode="liveall",
+)
+
 
 def record_processing(worker_name, duration, success):
     """Record a processed item with timing.
