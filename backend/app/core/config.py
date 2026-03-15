@@ -93,6 +93,11 @@ class Settings(BaseSettings):
     queue_embedding: str = "embedding"
     queue_clustering: str = "clustering"
     queue_answer_generation: str = "answer_generation"
+    queue_youtube_posting: str = "youtube_posting"
+
+    # Worker thresholds
+    classification_confidence_threshold: float = 0.4
+    clustering_similarity_threshold: float = 0.65
 
     # Gemini AI
     gemini_api_key: str = Field(default="", description="Gemini API key")
