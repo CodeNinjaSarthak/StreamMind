@@ -9,10 +9,14 @@ sys.path.insert(0, os.path.join(_root, "backend"))
 
 os.environ.setdefault("ENVIRONMENT", "development")
 
-from sqlalchemy import func, case
-from app.db.models.comment import Comment
-from app.db.models.cluster import Cluster
 from app.db.models.answer import Answer
+from app.db.models.cluster import Cluster
+from app.db.models.comment import Comment
+from sqlalchemy import (
+    case,
+    func,
+)
+
 from workers.common.db import get_db_session
 
 
@@ -22,11 +26,7 @@ def run():
             # ---------------------------------------------------------------
             # 1. Total mock comments
             # ---------------------------------------------------------------
-            total_mock = (
-                db.query(func.count(Comment.id))
-                .filter(Comment.youtube_comment_id.like("mock:%"))
-                .scalar()
-            )
+            total_mock = db.query(func.count(Comment.id)).filter(Comment.youtube_comment_id.like("mock:%")).scalar()
             print("=" * 60)
             print(f"1) TOTAL MOCK COMMENTS: {total_mock}")
             print("=" * 60)
@@ -62,7 +62,7 @@ def run():
                     .all()
                 )
                 for i, (text,) in enumerate(samples, 1):
-                    print(f"    {i}. \"{text}\"")
+                    print(f'    {i}. "{text}"')
 
             # Clustered
             cluster_rows = (
@@ -79,7 +79,7 @@ def run():
             )
 
             for cid, title, cnt in cluster_rows:
-                print(f"\n  Cluster: \"{title}\"  ({cnt} mock comments)")
+                print(f'\n  Cluster: "{title}"  ({cnt} mock comments)')
                 samples = (
                     db.query(Comment.text)
                     .filter(Comment.cluster_id == cid, Comment.youtube_comment_id.like("mock:%"))
@@ -87,7 +87,7 @@ def run():
                     .all()
                 )
                 for i, (text,) in enumerate(samples, 1):
-                    print(f"    {i}. \"{text}\"")
+                    print(f'    {i}. "{text}"')
 
             # ---------------------------------------------------------------
             # 3. Answers generated for mock clusters
@@ -109,7 +109,7 @@ def run():
                 for aid, ctitle, atext, posted in answers:
                     status = "POSTED" if posted else "pending"
                     preview = atext[:120].replace("\n", " ") + ("..." if len(atext) > 120 else "")
-                    print(f"\n   [{status}] Cluster: \"{ctitle}\"")
+                    print(f'\n   [{status}] Cluster: "{ctitle}"')
                     print(f"   Answer: {preview}")
             else:
                 print("   No clusters with mock comments — no answers to check.")
@@ -131,7 +131,11 @@ def run():
                 .one()
             )
 
-            total, questions, non_questions = int(stats.total), int(stats.questions or 0), int(stats.non_questions or 0)
+            total, questions, non_questions = (
+                int(stats.total),
+                int(stats.questions or 0),
+                int(stats.non_questions or 0),
+            )
             q_pct = (questions / total * 100) if total else 0
             nq_pct = (non_questions / total * 100) if total else 0
 

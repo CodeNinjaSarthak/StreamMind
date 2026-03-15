@@ -161,12 +161,14 @@ def poll_session(session_id: str, manager: QueueManager) -> None:
                 )
 
                 # Publish event for WebSocket relay
-                ws_event = event_service.create_comment_created_event({
-                    "id": str(comment.id),
-                    "text": comment.text,
-                    "author_name": comment.author_name,
-                    "session_id": str(session.id),
-                })
+                ws_event = event_service.create_comment_created_event(
+                    {
+                        "id": str(comment.id),
+                        "text": comment.text,
+                        "author_name": comment.author_name,
+                        "session_id": str(session.id),
+                    }
+                )
                 redis_client.publish(f"ws:{session.id}", json.dumps(ws_event))
 
                 fetched += 1

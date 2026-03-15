@@ -133,14 +133,12 @@ class WebSocketManager:
                     if message["type"] != "pmessage":
                         continue
                     channel: str = message["channel"]  # "ws:{session_id}"
-                    session_id = channel[3:]            # strip "ws:" prefix
+                    session_id = channel[3:]  # strip "ws:" prefix
                     try:
                         event = json.loads(message["data"])
                         await self.broadcast_to_session(session_id, event)
                     except Exception as e:
-                        logger.error(
-                            f"Failed to deliver WS event for session {session_id}: {e}"
-                        )
+                        logger.error(f"Failed to deliver WS event for session {session_id}: {e}")
             except Exception as e:
                 logger.error(f"WS subscriber error, reconnecting in {backoff}s: {e}")
                 await asyncio.sleep(backoff)
@@ -149,12 +147,7 @@ class WebSocketManager:
                 if r:
                     await r.aclose()
 
-    async def send_personal_message(
-        self,
-        session_id: str,
-        connection_id: str,
-        message: Dict[str, Any]
-    ) -> bool:
+    async def send_personal_message(self, session_id: str, connection_id: str, message: Dict[str, Any]) -> bool:
         """Send a message to a specific WebSocket.
 
         Args:

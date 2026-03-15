@@ -140,7 +140,7 @@ class GeminiClient:
                 f"{joined}"
             )
             response = self._client.models.generate_content(
-                model="gemini-2.0-flash",
+                model=settings.gemini_model,
                 contents=prompt,
                 config=types.GenerateContentConfig(max_output_tokens=20),
             )

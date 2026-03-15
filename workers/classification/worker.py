@@ -13,6 +13,7 @@ sys.path.insert(0, _project_root)
 sys.path.insert(0, os.path.join(_project_root, "backend"))
 
 
+from app.core.config import settings
 from app.db.models.comment import Comment
 from app.services.gemini.client import GeminiClient
 from app.services.websocket.events import event_service
@@ -30,7 +31,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 1  # seconds
-CONFIDENCE_THRESHOLD = 0.4
 
 
 def main() -> None:
@@ -60,7 +60,10 @@ def main() -> None:
                         comment.is_question = result["is_question"]
                         comment.confidence_score = result["confidence"]
                         db.commit()
-                        if result["is_question"] and result["confidence"] > CONFIDENCE_THRESHOLD:
+                        if (
+                            result["is_question"]
+                            and result["confidence"] > settings.classification_confidence_threshold
+                        ):
                             manager.enqueue(
                                 QUEUE_EMBEDDING,
                                 EmbeddingPayload(comment_id=str(comment.id), text=comment.text).to_dict(),
@@ -71,7 +74,7 @@ def main() -> None:
                                 extra={
                                     "comment_id": comment_id,
                                     "confidence": result["confidence"],
-                                    "threshold": CONFIDENCE_THRESHOLD,
+                                    "threshold": settings.classification_confidence_threshold,
                                 },
                             )
 
@@ -79,9 +82,7 @@ def main() -> None:
                         event = event_service.create_comment_classified_event(
                             str(comment.id), result["is_question"], result["confidence"]
                         )
-                        redis_client.publish(
-                            f"ws:{comment.session_id}", json.dumps(event)
-                        )
+                        redis_client.publish(f"ws:{comment.session_id}", json.dumps(event))
 
                         logger.info(
                             "Classification complete",

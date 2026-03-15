@@ -12,7 +12,10 @@ import random
 import signal
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import (
+    datetime,
+    timezone,
+)
 from uuid import uuid4
 
 _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -168,12 +171,14 @@ def mock_poll_session(session_id: str, manager: QueueManager, redis_client) -> N
             db.commit()
 
             # Publish event for WebSocket relay
-            event = event_service.create_comment_created_event({
-                "id": str(comment.id),
-                "text": comment.text,
-                "author_name": comment.author_name,
-                "session_id": str(session.id),
-            })
+            event = event_service.create_comment_created_event(
+                {
+                    "id": str(comment.id),
+                    "text": comment.text,
+                    "author_name": comment.author_name,
+                    "session_id": str(session.id),
+                }
+            )
             redis_client.publish(f"ws:{session.id}", json.dumps(event))
 
             _stats["messages"] += 1
@@ -224,11 +229,7 @@ def main() -> None:
         active_session_ids: list[str] = []
         for db in get_db_session():
             try:
-                rows = (
-                    db.query(StreamingSession.id)
-                    .filter(StreamingSession.is_active.is_(True))
-                    .all()
-                )
+                rows = db.query(StreamingSession.id).filter(StreamingSession.is_active.is_(True)).all()
                 active_session_ids = [str(r.id) for r in rows]
             finally:
                 db.close()

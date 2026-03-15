@@ -13,6 +13,7 @@ sys.path.insert(0, _project_root)
 sys.path.insert(0, os.path.join(_project_root, "backend"))
 
 import numpy as np
+from app.core.config import settings
 from app.db.models.cluster import Cluster
 from app.db.models.comment import Comment
 from app.services.gemini.client import GeminiClient
@@ -32,7 +33,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 1  # seconds
-SIMILARITY_THRESHOLD = 0.65
 ANSWER_GENERATION_MILESTONES = {3, 10, 25}
 
 
@@ -71,25 +71,25 @@ def main() -> None:
                         emb_literal = "[" + ",".join(map(str, comment.embedding)) + "]"
 
                         row = db.execute(
-                            text(
-                                """
+                            text("""
                                 SELECT id, centroid_embedding, comment_count,
                                        1 - (centroid_embedding <=> CAST(:emb AS vector)) AS similarity
                                 FROM clusters
                                 WHERE session_id = :sid
                                 ORDER BY centroid_embedding <=> CAST(:emb AS vector)
                                 LIMIT 1
-                                """
-                            ),
+                                """),
                             {"emb": emb_literal, "sid": str(comment.session_id)},
                         ).fetchone()
 
-                        if row is not None and row.similarity >= SIMILARITY_THRESHOLD:
+                        if row is not None and row.similarity >= settings.clustering_similarity_threshold:
                             # Join existing cluster
                             is_new_cluster = False
                             cluster = db.query(Cluster).filter(Cluster.id == row.id).first()
                             n = cluster.comment_count
-                            new_vec = (np.array(cluster.centroid_embedding) * n + np.array(comment.embedding)) / (n + 1)
+                            new_vec = (np.array(cluster.centroid_embedding) * n + np.array(comment.embedding)) / (
+                                n + 1
+                            )
                             new_vec = new_vec / np.linalg.norm(new_vec)
                             cluster.centroid_embedding = new_vec.tolist()
                             cluster.comment_count = n + 1
@@ -125,9 +125,7 @@ def main() -> None:
                             event = event_service.create_cluster_created_event(cluster_data)
                         else:
                             event = event_service.create_cluster_updated_event(cluster_data)
-                        redis_client.publish(
-                            f"ws:{comment.session_id}", json.dumps(event)
-                        )
+                        redis_client.publish(f"ws:{comment.session_id}", json.dumps(event))
 
                         cluster_comments = (
                             db.query(Comment)
