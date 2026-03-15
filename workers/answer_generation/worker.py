@@ -87,13 +87,13 @@ def main() -> None:
                         logger.info(f"Answer generated for cluster {cluster_id}, answer_id={answer.id}")
 
                         # Publish event for WebSocket relay
-                        event = event_service.create_answer_ready_event({
-                            "answer_id": str(answer.id),
-                            "cluster_id": str(cluster.id),
-                        })
-                        redis_client.publish(
-                            f"ws:{cluster.session_id}", json.dumps(event)
+                        event = event_service.create_answer_ready_event(
+                            {
+                                "answer_id": str(answer.id),
+                                "cluster_id": str(cluster.id),
+                            }
                         )
+                        redis_client.publish(f"ws:{cluster.session_id}", json.dumps(event))
 
                         # Auto-enqueue to YouTube posting if session has YouTube connected
                         session = db.query(StreamingSession).filter(StreamingSession.id == cluster.session_id).first()

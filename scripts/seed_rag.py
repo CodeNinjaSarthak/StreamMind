@@ -7,8 +7,8 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from backend.app.db.session import SessionLocal
 from backend.app.db.models.rag import RAGDocument
+from backend.app.db.session import SessionLocal
 
 
 def seed_rag_documents() -> None:
@@ -24,4 +24,3 @@ def seed_rag_documents() -> None:
 
 if __name__ == "__main__":
     seed_rag_documents()
-
