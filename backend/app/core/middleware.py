@@ -9,6 +9,10 @@ from typing import (
 )
 
 from app.core.logging import get_logger
+from app.core.metrics import (
+    increment_http_requests,
+    observe_request_duration,
+)
 from fastapi import (
     Request,
     Response,
@@ -65,6 +69,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             response.headers["X-Request-ID"] = request_id
             response.headers["X-Process-Time"] = str(process_time)
 
+            increment_http_requests(request.method, request.url.path, response.status_code)
+            observe_request_duration(request.method, request.url.path, process_time)
+
             logger.info(
                 "Request completed",
                 extra={
@@ -80,6 +87,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             process_time = time.time() - start_time
+            increment_http_requests(request.method, request.url.path, 500)
+            observe_request_duration(request.method, request.url.path, process_time)
             logger.error(
                 f"Request failed: {str(e)}",
                 extra={

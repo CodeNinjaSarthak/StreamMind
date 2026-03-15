@@ -22,7 +22,11 @@ _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 sys.path.insert(0, _project_root)
 sys.path.insert(0, os.path.join(_project_root, "backend"))
 
-from app.core.encryption import (
+from workers.common.prometheus_setup import setup_multiproc_dir  # noqa: E402
+
+setup_multiproc_dir()
+
+from app.core.encryption import (  # noqa: E402
     decrypt_data,
     encrypt_data,
 )
@@ -36,6 +40,10 @@ from app.services.youtube.quota import YouTubeQuotaService
 from googleapiclient.errors import HttpError
 
 from workers.common.db import get_db_session
+from workers.common.metrics import (  # noqa: E402
+    record_processing,
+    update_queue_depths,
+)
 from workers.common.queue import (
     QUEUE_CLASSIFICATION,
     QueueManager,
@@ -191,6 +199,7 @@ def main() -> None:
 
     while _running:
         _stats["polls"] += 1
+        update_queue_depths(manager)
 
         # Log metrics every 60s
         if time.time() - _stats["last_log"] >= 60:
@@ -216,15 +225,19 @@ def main() -> None:
                 db.close()
 
         if active_session_ids:
+            cycle_start = time.time()
             with ThreadPoolExecutor(max_workers=min(len(active_session_ids), 10)) as executor:
                 futures = {executor.submit(poll_session, sid, manager): sid for sid in active_session_ids}
+                cycle_success = True
                 for future in as_completed(futures):
                     sid = futures[future]
                     try:
                         future.result()
                     except Exception as e:
+                        cycle_success = False
                         _stats["errors"] += 1
                         logger.error(f"Poll error for session {sid}: {e}", exc_info=True)
+            record_processing("youtube_polling", time.time() - cycle_start, cycle_success)
 
         time.sleep(POLL_INTERVAL)
 

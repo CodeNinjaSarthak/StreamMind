@@ -12,7 +12,11 @@ _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 sys.path.insert(0, _project_root)
 sys.path.insert(0, os.path.join(_project_root, "backend"))
 
-from app.db.models.answer import Answer
+from workers.common.prometheus_setup import setup_multiproc_dir  # noqa: E402
+
+setup_multiproc_dir()
+
+from app.db.models.answer import Answer  # noqa: E402
 from app.db.models.cluster import Cluster
 from app.db.models.streaming_session import StreamingSession
 from app.db.models.youtube_token import YouTubeToken
@@ -24,6 +28,10 @@ from app.services.websocket.events import event_service
 from sqlalchemy import text
 
 from workers.common.db import get_db_session
+from workers.common.metrics import (  # noqa: E402
+    record_processing,
+    update_queue_depths,
+)
 from workers.common.queue import (
     QUEUE_ANSWER_GENERATION,
     QUEUE_YOUTUBE_POSTING,
@@ -51,9 +59,11 @@ def main() -> None:
             try:
                 task = manager.dequeue(QUEUE_ANSWER_GENERATION)
                 if task is None:
+                    update_queue_depths(manager)
                     time.sleep(POLL_INTERVAL)
                     continue
 
+                proc_start = time.time()
                 cluster_id = task.get("cluster_id")
                 question_texts = task.get("question_texts", [])
 
@@ -111,11 +121,13 @@ def main() -> None:
                                 logger.info(f"Enqueued answer {answer.id} for YouTube posting")
                     finally:
                         db.close()
+                record_processing("answer_generation", time.time() - proc_start, True)
                 task = None
 
             except Exception as e:
                 logger.error(f"Worker error: {e}", exc_info=True)
                 if task:
+                    record_processing("answer_generation", time.time() - proc_start, False)
                     manager.retry(QUEUE_ANSWER_GENERATION, task)
                     task = None
                 time.sleep(POLL_INTERVAL)
