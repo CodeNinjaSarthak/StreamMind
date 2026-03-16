@@ -16,6 +16,15 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from workers.common.queue import (
+    QUEUE_ANSWER_GENERATION,
+    QUEUE_CLASSIFICATION,
+    QUEUE_CLUSTERING,
+    QUEUE_COMMENT_INGEST,
+    QUEUE_EMBEDDING,
+    QUEUE_YOUTUBE_POSTING,
+)
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -88,12 +97,12 @@ class Settings(BaseSettings):
     default_monthly_session_limit: int = 30
 
     # Worker queue names
-    queue_comment_ingest: str = "comment_ingest"
-    queue_classification: str = "classification"
-    queue_embedding: str = "embedding"
-    queue_clustering: str = "clustering"
-    queue_answer_generation: str = "answer_generation"
-    queue_youtube_posting: str = "youtube_posting"
+    queue_comment_ingest: str = QUEUE_COMMENT_INGEST
+    queue_classification: str = QUEUE_CLASSIFICATION
+    queue_embedding: str = QUEUE_EMBEDDING
+    queue_clustering: str = QUEUE_CLUSTERING
+    queue_answer_generation: str = QUEUE_ANSWER_GENERATION
+    queue_youtube_posting: str = QUEUE_YOUTUBE_POSTING
 
     # Worker thresholds
     classification_confidence_threshold: float = 0.4

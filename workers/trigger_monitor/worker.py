@@ -1,3 +1,4 @@
+# STUB — not wired up. Not started by start_dev.sh. No implementation exists.
 """Trigger monitor worker for monitoring and triggering actions."""
 
 import logging

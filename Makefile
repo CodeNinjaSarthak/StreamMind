@@ -22,7 +22,7 @@ help:
 	@echo "  make clean             - Clean generated files"
 
 run-backend:
-	cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd backend && PYTHONPATH=$(CURDIR) uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 run-workers:
 	python -m workers.runner
