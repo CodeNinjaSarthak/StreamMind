@@ -55,7 +55,7 @@ DIRS=(
   "$ROOT/frontend"
 )
 CMDS=(
-  "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+  "PYTHONPATH='$ROOT' uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
   "python workers/classification/worker.py"
   "python workers/embeddings/worker.py"
   "python workers/clustering/worker.py"
@@ -78,7 +78,14 @@ cd '${DIRS[$i]}' && echo -e '\033[1;34m=== ${NAMES[$i]} ===\033[0m' && ${CMDS[$i
 
 # Create session with first pane
 tmux new-session -d -s "$SESSION" -x "$(tput cols)" -y "$(tput lines)"
+
+# Mouse + clipboard config
 tmux set-option -t "$SESSION" mouse on
+tmux set-option -t "$SESSION" set-clipboard on
+tmux set-window-option -t "$SESSION" mode-keys vi
+tmux bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -in -selection clipboard 2>/dev/null || pbcopy 2>/dev/null || true"
+tmux bind-key -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel "xclip -in -selection clipboard 2>/dev/null || pbcopy 2>/dev/null || true"
+
 tmux send-keys -t "$SESSION:0" "$(pane_cmd 0)" Enter
 
 # Add remaining panes
