@@ -32,6 +32,7 @@ from pydantic import (
     BaseModel,
     Field,
 )
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -125,8 +126,18 @@ async def approve_answer(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Answer not found")
 
     answer, cluster, session = result
-    if answer.is_posted:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already posted")
+
+    rows_updated = db.execute(
+        update(Answer)
+        .where(Answer.id == answer_id, Answer.is_posted == False)  # noqa: E712
+        .values(is_posted=True, posted_at=datetime.now(timezone.utc))
+    ).rowcount
+
+    if rows_updated == 0:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already approved")
+
+    db.commit()
+    db.refresh(answer)
 
     yt_token = db.query(YouTubeToken).filter(YouTubeToken.teacher_id == current_user.id).first()
 
@@ -140,12 +151,7 @@ async def approve_answer(
             ).to_dict(),
         )
         logger.info(f"Enqueued answer {answer_id} for YouTube posting")
-    else:
-        answer.is_posted = True
-        answer.posted_at = datetime.now(timezone.utc)
-        db.commit()
 
-    db.refresh(answer)
     return answer
 
 

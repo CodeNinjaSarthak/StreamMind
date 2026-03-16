@@ -137,8 +137,13 @@ def main() -> None:
                     _stats["posted"] += 1
 
                     # Publish event for WebSocket relay
-                    event = event_service.create_answer_posted_event(str(answer.id), str(answer.cluster_id))
-                    redis_client.publish(f"ws:{session_id}", json.dumps(event))
+                    try:
+                        event = event_service.create_answer_posted_event(str(answer.id), str(answer.cluster_id))
+                        redis_client.publish(f"ws:{session_id}", json.dumps(event))
+                    except Exception as pub_err:
+                        logger.error(
+                            f"Failed to publish WS event for answer {answer_id} session {session_id}: {pub_err}"
+                        )
                     logger.info(f"Posted answer {answer_id} to YouTube chat (msg_id={msg_id})")
 
                 finally:

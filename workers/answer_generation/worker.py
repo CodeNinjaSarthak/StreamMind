@@ -105,13 +105,19 @@ def main() -> None:
                         logger.info(f"Answer generated for cluster {cluster_id}, answer_id={answer.id}")
 
                         # Publish event for WebSocket relay
-                        event = event_service.create_answer_ready_event(
-                            {
-                                "answer_id": str(answer.id),
-                                "cluster_id": str(cluster.id),
-                            }
-                        )
-                        redis_client.publish(f"ws:{cluster.session_id}", json.dumps(event))
+                        try:
+                            event = event_service.create_answer_ready_event(
+                                {
+                                    "answer_id": str(answer.id),
+                                    "cluster_id": str(cluster.id),
+                                }
+                            )
+                            redis_client.publish(f"ws:{cluster.session_id}", json.dumps(event))
+                        except Exception as pub_err:
+                            logger.error(
+                                f"Failed to publish answer_ready event for answer {answer.id}"
+                                f" session {cluster.session_id}: {pub_err}"
+                            )
 
                         # Auto-enqueue to YouTube posting if session has YouTube connected
                         session = db.query(StreamingSession).filter(StreamingSession.id == cluster.session_id).first()

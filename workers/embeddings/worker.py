@@ -60,7 +60,6 @@ def process_task(task, gemini_client, manager, db, redis_client):
         return
     embedding = gemini_client.generate_embedding(comment.text)
     comment.embedding = embedding
-    db.commit()
     manager.enqueue(
         QUEUE_CLUSTERING,
         ClusteringPayload(
@@ -72,6 +71,8 @@ def process_task(task, gemini_client, manager, db, redis_client):
     if redis_client is not None:
         event = event_service.create_comment_embedded_event(str(comment.id))
         redis_client.publish(f"ws:{comment.session_id}", json.dumps(event))
+
+    db.commit()
 
     logger.info(f"Embedding stored for comment {comment_id}")
 

@@ -129,8 +129,7 @@ def main() -> None:
                             comment.cluster_id = cluster.id
                             logger.info(f"Created new cluster {cluster.id} for comment {comment_id}")
 
-                        db.commit()
-                        db.refresh(cluster)
+                        db.flush()
 
                         # Publish event for WebSocket relay
                         cluster_data = {
@@ -143,6 +142,9 @@ def main() -> None:
                         else:
                             event = event_service.create_cluster_updated_event(cluster_data)
                         redis_client.publish(f"ws:{comment.session_id}", json.dumps(event))
+
+                        db.commit()
+                        db.refresh(cluster)
 
                         cluster_comments = (
                             db.query(Comment)
@@ -158,7 +160,7 @@ def main() -> None:
                             try:
                                 summary = gemini_client.summarize_cluster([c.text for c in cluster_comments])
                                 cluster.title = summary
-                                db.commit()
+                                db.flush()
                                 logger.info(f"Cluster {cluster.id} title updated: {summary!r}")
 
                                 # Publish title update for WebSocket relay
@@ -169,8 +171,18 @@ def main() -> None:
                                 }
                                 title_event = event_service.create_cluster_updated_event(title_event_data)
                                 redis_client.publish(f"ws:{comment.session_id}", json.dumps(title_event))
+
+                                db.commit()
                             except Exception as e:
                                 logger.error(f"Failed to summarize cluster {cluster.id}: {e}")
+                                try:
+                                    fail_event = {
+                                        "type": "cluster_summary_failed",
+                                        "data": {"cluster_id": str(cluster.id)},
+                                    }
+                                    redis_client.publish(f"ws:{comment.session_id}", json.dumps(fail_event))
+                                except Exception as pub_err:
+                                    logger.error(f"Failed to publish summary failure event: {pub_err}")
 
                         # Enqueue answer generation on new cluster or milestones
                         if is_new_cluster or cluster.comment_count in ANSWER_GENERATION_MILESTONES:

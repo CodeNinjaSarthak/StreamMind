@@ -59,7 +59,6 @@ def process_task(task, gemini_client, manager, db, redis_client):
     result = gemini_client.classify_question(comment.text)
     comment.is_question = result["is_question"]
     comment.confidence_score = result["confidence"]
-    db.commit()
     if result["is_question"] and result["confidence"] > settings.classification_confidence_threshold:
         manager.enqueue(
             QUEUE_EMBEDDING,
@@ -81,6 +80,8 @@ def process_task(task, gemini_client, manager, db, redis_client):
             str(comment.id), result["is_question"], result["confidence"]
         )
         redis_client.publish(f"ws:{comment.session_id}", json.dumps(event))
+
+    db.commit()
 
     logger.info(
         "Classification complete",
