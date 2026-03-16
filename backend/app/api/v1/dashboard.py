@@ -33,6 +33,7 @@ from pydantic import (
     Field,
 )
 from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -83,7 +84,11 @@ async def submit_manual_question(
             text=text,
         )
         db.add(comment)
-        db.flush()
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Duplicate question submission.")
         manager.enqueue(
             QUEUE_CLASSIFICATION,
             ClassificationPayload(

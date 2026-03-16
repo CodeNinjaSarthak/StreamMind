@@ -110,6 +110,14 @@ class Settings(BaseSettings):
 
     # Gemini AI
     gemini_api_key: str = Field(default="", description="Gemini API key")
+
+    @field_validator("gemini_api_key")
+    @classmethod
+    def validate_gemini_api_key(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("gemini_api_key must be set — Gemini workers cannot function without it")
+        return v
+
     gemini_model: str = "gemini-2.5-flash"
     gemini_embedding_model: str = "gemini-embedding-001"
     clustering_threshold: int = Field(default=5, description="Questions needed to trigger clustering")

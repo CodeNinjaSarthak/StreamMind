@@ -18,6 +18,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import sessionmaker
 
+os.environ.setdefault("GEMINI_API_KEY", "test-key-placeholder")
+
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
     "postgresql://sarthak@localhost:5432/ai_doubt_manager_test",
