@@ -1149,47 +1149,121 @@ button:disabled { opacity: 0.4; pointer-events: none; }
 }
 
 /* ============================================================
-   Landing Page
+   Landing Page — Keyframe Animations
    ============================================================ */
-.landing { display: flex; flex-direction: column; min-height: 100vh; }
-
-.landing-header {
-  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
-  padding: 0 48px; height: 60px; display: flex; align-items: center; justify-content: space-between;
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ============================================================
+   Landing Page
+   ============================================================ */
+.landing {
+  display: flex; flex-direction: column; min-height: 100vh;
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,107,53,0.08) 0%, transparent 70%),
+    radial-gradient(circle 1px at center, rgba(255,107,53,0.12) 0%, transparent 1px);
+  background-size: 100% 100%, 24px 24px;
+}
+
+/* --- Navbar --- */
+.landing-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(8,9,13,0.7);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,107,53,0.1);
+  padding: 0 48px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+}
 .landing-nav { display: flex; gap: 12px; align-items: center; }
 .landing-nav .btn-primary { width: auto; margin-top: 0; }
 
-.landing-hero { text-align: center; padding: 64px 24px 48px; max-width: 680px; margin: 0 auto; }
+/* --- Staggered entrance animations --- */
+.anim-nav { animation: fadeSlideDown 0.6s ease-out both; }
+.anim-1, .anim-2, .anim-3, .anim-4 { opacity: 0; }
+.anim-1 { animation: fadeSlideUp 0.7s ease-out 0s both; }
+.anim-2 { animation: fadeSlideUp 0.7s ease-out 0.15s both; }
+.anim-3 { animation: fadeSlideUp 0.7s ease-out 0.3s both; }
+.anim-4 { animation: fadeSlideUp 0.7s ease-out 0.45s both; }
+
+/* --- Hero --- */
+.landing-hero {
+  position: relative;
+  text-align: center; padding: 100px 24px 80px;
+  max-width: 800px; margin: 0 auto;
+}
+.landing-hero::before {
+  content: '';
+  position: absolute; inset: -40px -80px;
+  background: radial-gradient(ellipse 50% 40% at 50% 30%, rgba(255,107,53,0.10) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+.landing-hero > * { position: relative; z-index: 1; }
 
 .landing-hero h1 {
-  font-family: var(--font-display); font-size: 28px; font-weight: 700;
-  color: var(--color-accent); margin-bottom: 16px; letter-spacing: 0.04em;
+  font-family: 'Bebas Neue', sans-serif; font-size: 72px; font-weight: 400;
+  color: var(--color-accent); margin-bottom: 20px; letter-spacing: 0.03em;
+  line-height: 1;
+}
+.landing-hero .tagline {
+  font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 600;
+  color: var(--color-text); margin-bottom: 14px;
+}
+.landing-hero .subtitle {
+  font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 400;
+  color: var(--color-muted); margin-bottom: 40px; line-height: 1.7;
 }
 
-.landing-hero .tagline { font-size: 18px; font-weight: 600; color: var(--color-text); margin-bottom: 12px; }
-.landing-hero .subtitle { font-size: 14px; color: var(--color-muted); margin-bottom: 32px; line-height: 1.7; }
+.landing-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.landing-ctas .btn { padding: 12px 32px; font-size: 13px; }
+.landing-ctas .btn-primary { width: auto; margin-top: 0; transition: box-shadow 0.3s ease, background 0.15s ease; }
+.landing-ctas .btn-primary:hover { box-shadow: 0 0 20px rgba(255,107,53,0.4); }
 
-.landing-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.landing-ctas .btn { padding: 10px 28px; font-size: 12px; }
-.landing-ctas .btn-primary { width: auto; margin-top: 0; }
-
-.landing-features { background: var(--color-surface); border-top: 1px solid var(--color-border); padding: 48px 24px; flex: 1; }
-
+/* --- Features --- */
+.landing-features {
+  padding: 56px 24px; flex: 1;
+}
 .landing-features h2 {
-  font-family: var(--font-display); text-align: center; font-size: 14px; font-weight: 700;
-  margin-bottom: 32px; color: var(--color-text); letter-spacing: 0.06em; text-transform: uppercase;
+  font-family: 'Syne', sans-serif; text-align: center;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.18em; color: var(--color-muted);
+  margin-bottom: 48px;
 }
 
-.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 900px; margin: 0 auto; }
+.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 56px; max-width: 960px; margin: 0 auto; }
 
-.feature-card { background: var(--color-bg); border: 1px solid var(--color-border); padding: 24px; text-align: center; }
-.feature-emoji { font-size: 28px; margin-bottom: 12px; }
-.feature-card h3 { font-family: var(--font-display); font-size: 11px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.06em; }
-.feature-card p  { font-size: 12px; color: var(--color-muted); line-height: 1.6; }
+.feature-card {
+  position: relative;
+  background: none; border: none; box-shadow: none;
+  padding: 0; text-align: left;
+}
 
-.landing-footer { background: var(--color-surface); border-top: 1px solid var(--color-border); padding: 20px 24px; text-align: center; font-size: 12px; color: var(--color-muted); }
+.card-number {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.15em;
+  color: rgba(255,255,255,0.4); line-height: 1;
+  margin-bottom: 12px;
+}
+
+.feature-emoji { font-size: 40px; margin-bottom: 16px; }
+.feature-card h3 {
+  font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
+  margin-bottom: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.feature-card p { font-size: 13px; color: var(--color-muted); line-height: 1.8; }
+
+/* --- Footer --- */
+.landing-footer {
+  border-top: 1px solid rgba(255,107,53,0.1);
+  padding: 32px 24px; text-align: center;
+  font-family: 'Syne', sans-serif; font-size: 12px; color: var(--color-muted);
+}
 
 /* ============================================================
    Custom Scrollbars — thin, accent thumb
@@ -1253,7 +1327,9 @@ button:disabled { opacity: 0.4; pointer-events: none; }
 
 @media (max-width: 700px) {
   .landing-header { padding: 0 20px; }
-  .landing-hero h1 { font-size: 22px; }
+  .landing-hero { padding: 60px 20px 48px; }
+  .landing-hero h1 { font-size: 40px; }
+  .landing-hero .tagline { font-size: 17px; }
   .features-grid   { grid-template-columns: 1fr; }
   .landing-ctas    { flex-direction: column; align-items: center; }
 }
