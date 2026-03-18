@@ -1,6 +1,5 @@
 """Database migration script."""
 
-import os
 import sys
 from pathlib import Path
 
@@ -21,4 +20,3 @@ def run_migrations() -> None:
 
 if __name__ == "__main__":
     run_migrations()
-

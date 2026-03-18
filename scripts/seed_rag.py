@@ -1,6 +1,5 @@
 """Script to seed RAG documents."""
 
-import os
 import sys
 from pathlib import Path
 
@@ -8,7 +7,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from backend.app.db.session import SessionLocal
-from backend.app.db.models.rag import RAGDocument
 
 
 def seed_rag_documents() -> None:
@@ -24,4 +22,3 @@ def seed_rag_documents() -> None:
 
 if __name__ == "__main__":
     seed_rag_documents()
-

@@ -16,6 +16,15 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from workers.common.queue import (
+    QUEUE_ANSWER_GENERATION,
+    QUEUE_CLASSIFICATION,
+    QUEUE_CLUSTERING,
+    QUEUE_COMMENT_INGEST,
+    QUEUE_EMBEDDING,
+    QUEUE_YOUTUBE_POSTING,
+)
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -88,17 +97,34 @@ class Settings(BaseSettings):
     default_monthly_session_limit: int = 30
 
     # Worker queue names
-    queue_comment_ingest: str = "comment_ingest"
-    queue_classification: str = "classification"
-    queue_embedding: str = "embedding"
-    queue_clustering: str = "clustering"
-    queue_answer_generation: str = "answer_generation"
+    queue_comment_ingest: str = QUEUE_COMMENT_INGEST
+    queue_classification: str = QUEUE_CLASSIFICATION
+    queue_embedding: str = QUEUE_EMBEDDING
+    queue_clustering: str = QUEUE_CLUSTERING
+    queue_answer_generation: str = QUEUE_ANSWER_GENERATION
+    queue_youtube_posting: str = QUEUE_YOUTUBE_POSTING
+
+    # Worker thresholds
+    classification_confidence_threshold: float = 0.4
+    clustering_similarity_threshold: float = 0.65
 
     # Gemini AI
     gemini_api_key: str = Field(default="", description="Gemini API key")
+
+    @field_validator("gemini_api_key")
+    @classmethod
+    def validate_gemini_api_key(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("gemini_api_key must be set — Gemini workers cannot function without it")
+        return v
+
     gemini_model: str = "gemini-2.5-flash"
     gemini_embedding_model: str = "gemini-embedding-001"
     clustering_threshold: int = Field(default=5, description="Questions needed to trigger clustering")
+
+    # Mock / Testing
+    mock_youtube: bool = False
+    mock_message_interval: float = 2.0
 
     # Logging
     log_level: str = "INFO"

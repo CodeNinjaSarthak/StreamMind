@@ -3,6 +3,35 @@
  * Base helper redirects to /login on 401.
  */
 
+let refreshPromise = null;
+
+export async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) return null;
+  try {
+    const res = await fetch('/api/v1/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!res.ok) {
+      console.error(`Token refresh failed: HTTP ${res.status}`);
+      localStorage.removeItem('refreshToken');
+      handleUnauthorized();
+      return null;
+    }
+    const data = await res.json();
+    localStorage.setItem('token', data.access_token);
+    localStorage.setItem('refreshToken', data.refresh_token);
+    return data.access_token;
+  } catch (err) {
+    console.error('Token refresh error:', err);
+    localStorage.removeItem('refreshToken');
+    handleUnauthorized();
+    return null;
+  }
+}
+
 function handleUnauthorized() {
   localStorage.removeItem('token');
   localStorage.removeItem('userEmail');
@@ -16,6 +45,25 @@ async function apiFetch(path, options = {}, token = null) {
   const res = await fetch(path, { ...options, headers });
 
   if (res.status === 401) {
+    if (!refreshPromise) {
+      refreshPromise = refreshAccessToken().finally(() => {
+        refreshPromise = null;
+      });
+    }
+    const newToken = await refreshPromise;
+    if (newToken) {
+      const retryHeaders = { ...headers, Authorization: `Bearer ${newToken}` };
+      const retryRes = await fetch(path, { ...options, headers: retryHeaders });
+      if (!retryRes.ok) {
+        if (retryRes.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+        const body = await retryRes.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || `HTTP ${retryRes.status}`);
+      }
+      return retryRes.status === 204 ? null : retryRes.json();
+    }
     handleUnauthorized();
     return;
   }
@@ -148,6 +196,9 @@ export const deleteDocument = (documentId, token) =>
 // Clusters
 export const getClusterComments = (clusterId, token) =>
   apiFetch(`/api/v1/clusters/${clusterId}/comments`, {}, token);
+
+export const getRepresentativeQuestion = (clusterId, token) =>
+  apiFetch(`/api/v1/dashboard/clusters/${clusterId}/representative`, {}, token);
 
 // Profile & password
 export const updateProfile = (data, token) =>

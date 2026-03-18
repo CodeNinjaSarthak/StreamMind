@@ -4,11 +4,17 @@ Unit tests for Phase 3: YouTube Integration.
 Run with: python -m pytest scripts/test_youtube_integration.py -v
 """
 
-import sys
 import os
+import sys
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
-from datetime import datetime, timezone
+from datetime import (
+    datetime,
+    timezone,
+)
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 # Ensure backend is importable
 _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,10 +28,14 @@ class TestYouTubeOAuth(unittest.TestCase):
     @patch("app.services.youtube.oauth.Flow")
     def test_get_authorization_url_returns_url_and_state(self, mock_flow_class):
         mock_flow = MagicMock()
-        mock_flow.authorization_url.return_value = ("https://accounts.google.com/o/oauth2/auth?scope=...", "test-state-xyz")
+        mock_flow.authorization_url.return_value = (
+            "https://accounts.google.com/o/oauth2/auth?scope=...",
+            "test-state-xyz",
+        )
         mock_flow_class.from_client_config.return_value = mock_flow
 
         from app.services.youtube.oauth import YouTubeOAuthService
+
         svc = YouTubeOAuthService()
         url, state = svc.get_authorization_url()
 
@@ -48,6 +58,7 @@ class TestYouTubeOAuth(unittest.TestCase):
         mock_flow_class.from_client_config.return_value = mock_flow
 
         from app.services.youtube.oauth import YouTubeOAuthService
+
         svc = YouTubeOAuthService()
         result = svc.exchange_code_for_token("auth-code-xyz")
 
@@ -63,13 +74,12 @@ class TestYouTubeClient(unittest.TestCase):
     def test_get_live_chat_id_returns_id(self, mock_build):
         mock_service = MagicMock()
         mock_service.videos().list().execute.return_value = {
-            "items": [{
-                "liveStreamingDetails": {"activeLiveChatId": "chat123"}
-            }]
+            "items": [{"liveStreamingDetails": {"activeLiveChatId": "chat123"}}]
         }
         mock_build.return_value = mock_service
 
         from app.services.youtube.client import YouTubeClient
+
         client = YouTubeClient("access_token")
         chat_id = client.get_live_chat_id("video123")
         self.assertEqual(chat_id, "chat123")
@@ -81,6 +91,7 @@ class TestYouTubeClient(unittest.TestCase):
         mock_build.return_value = mock_service
 
         from app.services.youtube.client import YouTubeClient
+
         client = YouTubeClient("access_token")
         result = client.get_live_chat_id("nonexistent_video")
         self.assertIsNone(result)
@@ -92,12 +103,20 @@ class TestYouTubeClient(unittest.TestCase):
             "items": [
                 {
                     "id": "msg1",
-                    "snippet": {"type": "textMessageEvent", "displayMessage": "Hello", "publishedAt": "2026-01-01T00:00:00Z"},
+                    "snippet": {
+                        "type": "textMessageEvent",
+                        "displayMessage": "Hello",
+                        "publishedAt": "2026-01-01T00:00:00Z",
+                    },
                     "authorDetails": {"displayName": "Alice", "channelId": "ch1"},
                 },
                 {
                     "id": "msg2",
-                    "snippet": {"type": "superChatEvent", "displayMessage": "Donation", "publishedAt": "2026-01-01T00:01:00Z"},
+                    "snippet": {
+                        "type": "superChatEvent",
+                        "displayMessage": "Donation",
+                        "publishedAt": "2026-01-01T00:01:00Z",
+                    },
                     "authorDetails": {"displayName": "Bob", "channelId": "ch2"},
                 },
             ],
@@ -107,6 +126,7 @@ class TestYouTubeClient(unittest.TestCase):
         mock_build.return_value = mock_service
 
         from app.services.youtube.client import YouTubeClient
+
         client = YouTubeClient("access_token")
         result = client.list_messages("chat123")
 
@@ -122,6 +142,7 @@ class TestYouTubeClient(unittest.TestCase):
         mock_build.return_value = mock_service
 
         from app.services.youtube.client import YouTubeClient
+
         client = YouTubeClient("access_token")
         long_text = "A" * 300
         msg_id = client.post_message("chat123", long_text)
@@ -144,6 +165,7 @@ class TestYouTubeQuotaService(unittest.TestCase):
         mock_redis_lib.from_url.return_value = mock_redis
 
         from app.services.youtube.quota import YouTubeQuotaService
+
         svc = YouTubeQuotaService()
         self.assertTrue(svc.check_quota("teacher-1", "poll"))
 
@@ -154,6 +176,7 @@ class TestYouTubeQuotaService(unittest.TestCase):
         mock_redis_lib.from_url.return_value = mock_redis
 
         from app.services.youtube.quota import YouTubeQuotaService
+
         svc = YouTubeQuotaService()
         self.assertFalse(svc.check_quota("teacher-1", "poll"))
 
@@ -165,6 +188,7 @@ class TestYouTubeQuotaService(unittest.TestCase):
         mock_redis_lib.from_url.return_value = mock_redis
 
         from app.services.youtube.quota import YouTubeQuotaService
+
         svc = YouTubeQuotaService()
         svc.record_usage("teacher-1", "post")
 
@@ -179,6 +203,7 @@ class TestYouTubeQuotaService(unittest.TestCase):
         mock_redis_lib.from_url.return_value = mock_redis
 
         from app.services.youtube.quota import YouTubeQuotaService
+
         svc = YouTubeQuotaService()
         # None means 0 used, should allow any operation
         self.assertTrue(svc.check_quota("teacher-1", "post"))
@@ -194,6 +219,7 @@ class TestYouTubePollingService(unittest.TestCase):
         mock_client_class.return_value = mock_client
 
         from app.services.youtube.polling import YouTubePollingService
+
         svc = YouTubePollingService()
         result = svc.get_live_chat_id("video123", "access_token")
 
@@ -211,6 +237,7 @@ class TestYouTubePollingService(unittest.TestCase):
         mock_client_class.return_value = mock_client
 
         from app.services.youtube.polling import YouTubePollingService
+
         svc = YouTubePollingService()
         result = svc.fetch_live_chat_messages("chat123", "access_token")
 
@@ -228,6 +255,7 @@ class TestYouTubePostingService(unittest.TestCase):
         mock_client_class.return_value = mock_client
 
         from app.services.youtube.posting import YouTubePostingService
+
         svc = YouTubePostingService()
         result = svc.post_message("chat123", "Test answer text", "access_token")
 

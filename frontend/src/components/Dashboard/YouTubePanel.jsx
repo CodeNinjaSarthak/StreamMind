@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getYouTubeStatus, getYouTubeAuthURL, disconnectYouTube } from '../../services/api';
 
 export function YouTubePanel({ token }) {
@@ -6,6 +6,16 @@ export function YouTubePanel({ token }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const pollIntervalRef = useRef(null);
+  const messageHandlerRef = useRef(null);
+
+  useEffect(() => () => {
+    clearInterval(pollIntervalRef.current);
+    if (messageHandlerRef.current) {
+      window.removeEventListener('message', messageHandlerRef.current);
+      messageHandlerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     fetchStatus();
@@ -29,19 +39,24 @@ export function YouTubePanel({ token }) {
       const data = await getYouTubeAuthURL(token);
       const popup = window.open(data.url, 'youtube_oauth', 'width=600,height=700,noopener');
 
-      window.addEventListener('message', function handler(e) {
+      const handler = (e) => {
         if (e.origin !== window.location.origin) return;
         if (e.data?.type === 'youtube_oauth_complete') {
+          messageHandlerRef.current = null;
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
           popup?.close();
           fetchStatus();
           setActionLoading(false);
         }
-      }, { once: true });
+      };
+      messageHandlerRef.current = handler;
+      window.addEventListener('message', handler, { once: true });
 
-      // Fallback: if popup is closed without completing
-      const pollClosed = setInterval(() => {
+      pollIntervalRef.current = setInterval(() => {
         if (popup && popup.closed) {
-          clearInterval(pollClosed);
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
           fetchStatus();
           setActionLoading(false);
         }
@@ -68,7 +83,7 @@ export function YouTubePanel({ token }) {
     <section className="panel">
       <h2>YouTube</h2>
       {loading ? (
-        <p>Loading...</p>
+        <p className="hint">Loading…</p>
       ) : error ? (
         <p className="error-msg">{error}</p>
       ) : (
@@ -81,19 +96,23 @@ export function YouTubePanel({ token }) {
           {ytStatus?.connected ? (
             <>
               {ytStatus.expires_at && (
-                <p className="hint">Token expires: {new Date(ytStatus.expires_at).toLocaleString()}</p>
+                <p className="hint">Expires: {new Date(ytStatus.expires_at).toLocaleString()}</p>
               )}
               <button
                 onClick={handleDisconnect}
                 className="btn btn-danger-sm"
                 disabled={actionLoading}
               >
-                {actionLoading ? 'Disconnecting...' : 'Disconnect'}
+                {actionLoading ? 'Disconnecting…' : 'Disconnect'}
               </button>
             </>
           ) : (
-            <button onClick={handleConnect} className="btn" disabled={actionLoading}>
-              {actionLoading ? 'Connecting...' : 'Connect YouTube'}
+            <button
+              onClick={handleConnect}
+              className="btn btn-primary"
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Connecting…' : 'Connect YouTube'}
             </button>
           )}
         </>

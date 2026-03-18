@@ -41,19 +41,31 @@ async def websocket_endpoint(
         try:
             raw = await websocket.receive_text()
             first_msg = json.loads(raw)
-        except (json.JSONDecodeError, Exception):
-            await websocket.close(code=4001, reason="Auth message required")
+        except WebSocketDisconnect:
+            manager.disconnect(session_id, conn_id)
+            return
+        except Exception:
+            try:
+                await websocket.close(code=4001, reason="Auth message required")
+            except Exception:
+                pass
             manager.disconnect(session_id, conn_id)
             return
 
         if first_msg.get("type") != "auth" or not first_msg.get("token"):
-            await websocket.close(code=4001, reason="Auth message required")
+            try:
+                await websocket.close(code=4001, reason="Auth message required")
+            except Exception:
+                pass
             manager.disconnect(session_id, conn_id)
             return
 
         payload = verify_token(first_msg["token"])
         if not payload:
-            await websocket.close(code=4001, reason="Invalid token")
+            try:
+                await websocket.close(code=4001, reason="Invalid token")
+            except Exception:
+                pass
             manager.disconnect(session_id, conn_id)
             return
 
@@ -61,7 +73,10 @@ async def websocket_endpoint(
         try:
             session_obj = db.query(StreamingSession).filter(StreamingSession.id == session_id).first()
             if not session_obj or str(session_obj.teacher_id) != payload.get("sub"):
-                await websocket.close(code=4003, reason="Forbidden")
+                try:
+                    await websocket.close(code=4003, reason="Forbidden")
+                except Exception:
+                    pass
                 manager.disconnect(session_id, conn_id)
                 return
         finally:
@@ -103,3 +118,7 @@ async def websocket_endpoint(
         logger.error(f"WebSocket error: {e}")
         if conn_id:
             manager.disconnect(session_id, conn_id)
+        try:
+            await websocket.close(code=1011)
+        except Exception:
+            pass

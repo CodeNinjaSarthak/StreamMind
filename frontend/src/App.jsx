@@ -7,6 +7,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import LandingPage from './pages/LandingPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastContainer } from './components/Toast/Toast';
 import { GlobalShortcutsHandler } from './components/GlobalShortcutsHandler';
 
@@ -23,7 +24,9 @@ export default function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <DashboardPage />
+                  <ErrorBoundary>
+                    <DashboardPage />
+                  </ErrorBoundary>
                 </ProtectedRoute>
               }
             />
@@ -31,7 +34,9 @@ export default function App() {
               path="/settings"
               element={
                 <ProtectedRoute>
-                  <SettingsPage />
+                  <ErrorBoundary>
+                    <SettingsPage />
+                  </ErrorBoundary>
                 </ProtectedRoute>
               }
             />

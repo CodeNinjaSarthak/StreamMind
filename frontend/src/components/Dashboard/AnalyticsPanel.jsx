@@ -3,8 +3,9 @@ import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { getSessionAnalytics, getSessionClusters, fetchAllComments } from '../../services/api';
+import { getSessionAnalytics, getSessionClusters, getClusterComments } from '../../services/api';
 import { ActivityLog } from './ActivityLog';
+import { Skeleton } from '../Skeleton';
 
 const ANALYTICS_EVENTS = new Set([
   'comment_created', 'comment_classified',
@@ -70,15 +71,18 @@ export function AnalyticsPanel({ sessionId, token, sessionEvents }) {
   async function handleExportCSV() {
     setExporting(true);
     try {
-      const [clusters, comments] = await Promise.all([
-        getSessionClusters(sessionId, token),
-        fetchAllComments(sessionId, token),
-      ]);
+      const clusters = await getSessionClusters(sessionId, token);
       const rows = [['Question', 'Answer', 'Cluster', 'Timestamp', 'Is Posted']];
-      (clusters || []).forEach(cluster => {
-        const clusterComments = (comments || []).filter(c => c.cluster_id === cluster.id);
+      for (const cluster of (clusters || [])) {
+        let comments;
+        try {
+          comments = await getClusterComments(cluster.id, token);
+        } catch (e) {
+          console.warn(`Skipping cluster ${cluster.id} in export:`, e.message);
+          continue;
+        }
         const latestAnswer = cluster.answers?.[cluster.answers.length - 1];
-        clusterComments.forEach(comment => {
+        for (const comment of (comments || [])) {
           rows.push([
             comment.text,
             latestAnswer?.text || '',
@@ -86,8 +90,8 @@ export function AnalyticsPanel({ sessionId, token, sessionEvents }) {
             new Date(comment.created_at).toLocaleString(),
             latestAnswer?.is_posted ? 'Yes' : 'No',
           ]);
-        });
-      });
+        }
+      }
       const csv = rows
         .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
         .join('\n');
@@ -102,20 +106,29 @@ export function AnalyticsPanel({ sessionId, token, sessionEvents }) {
   async function handleExportJSON() {
     setExporting(true);
     try {
-      const [clusters, comments] = await Promise.all([
-        getSessionClusters(sessionId, token),
-        fetchAllComments(sessionId, token),
-      ]);
-      const output = (clusters || []).map(cluster => ({
-        cluster_id: cluster.id,
-        title: cluster.title,
-        comment_count: cluster.comment_count,
-        answer: cluster.answers?.[cluster.answers.length - 1]?.text || null,
-        is_posted: cluster.answers?.[cluster.answers.length - 1]?.is_posted ?? false,
-        questions: (comments || [])
-          .filter(c => c.cluster_id === cluster.id)
-          .map(c => ({ text: c.text, author: c.author_name, timestamp: c.created_at })),
-      }));
+      const clusters = await getSessionClusters(sessionId, token);
+      const output = [];
+      for (const cluster of (clusters || [])) {
+        let comments;
+        try {
+          comments = await getClusterComments(cluster.id, token);
+        } catch (e) {
+          console.warn(`Skipping cluster ${cluster.id} in export:`, e.message);
+          continue;
+        }
+        output.push({
+          cluster_id: cluster.id,
+          title: cluster.title,
+          comment_count: cluster.comment_count,
+          answer: cluster.answers?.[cluster.answers.length - 1]?.text || null,
+          is_posted: cluster.answers?.[cluster.answers.length - 1]?.is_posted ?? false,
+          questions: (comments || []).map(c => ({
+            text: c.text,
+            author: c.author_name,
+            timestamp: c.created_at,
+          })),
+        });
+      }
       downloadBlob(
         JSON.stringify(output, null, 2),
         'application/json',
@@ -128,7 +141,20 @@ export function AnalyticsPanel({ sessionId, token, sessionEvents }) {
     }
   }
 
-  if (loading) return <div className="panel"><p className="empty-msg">Loading analytics...</p></div>;
+  if (loading) return (
+    <div className="panel">
+      <h2>Session Analytics</h2>
+      <div className="analytics-stats">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="analytics-stat">
+            <Skeleton className="sk-analytics-value" />
+            <Skeleton className="sk-analytics-label" />
+          </div>
+        ))}
+      </div>
+      <Skeleton className="sk-analytics-chart" />
+    </div>
+  );
   if (error) return <div className="panel"><p className="error-msg">{error}</p></div>;
 
   // Derive cumulative line chart data
@@ -203,7 +229,16 @@ export function AnalyticsPanel({ sessionId, token, sessionEvents }) {
             </div>
           </>
         ) : (
-          <p className="empty-msg" style={{ marginBottom: 16 }}>No time data yet.</p>
+          <div className="empty-state" style={{ marginBottom: 16 }}>
+            <span className="empty-state-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+              </svg>
+            </span>
+            <p className="empty-state-title">No data yet</p>
+            <p className="empty-state-description">Analytics will appear once questions start coming in</p>
+          </div>
         )}
 
         {data.top_clusters.length > 0 && (

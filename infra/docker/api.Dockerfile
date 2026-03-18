@@ -9,5 +9,5 @@ COPY backend/ ./backend/
 
 ENV PYTHONPATH=/app
 
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
 

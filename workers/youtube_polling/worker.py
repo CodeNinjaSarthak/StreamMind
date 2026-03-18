@@ -4,8 +4,10 @@ Polls all active sessions in parallel using ThreadPoolExecutor.
 Each thread gets its own DB session and Redis client.
 """
 
+import json
 import logging
 import os
+import re
 import signal
 import sys
 import time
@@ -21,19 +23,28 @@ _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 sys.path.insert(0, _project_root)
 sys.path.insert(0, os.path.join(_project_root, "backend"))
 
-from app.core.encryption import (
+from workers.common.prometheus_setup import setup_multiproc_dir  # noqa: E402
+
+setup_multiproc_dir()
+
+from app.core.encryption import (  # noqa: E402
     decrypt_data,
     encrypt_data,
 )
 from app.db.models.comment import Comment
 from app.db.models.streaming_session import StreamingSession
 from app.db.models.youtube_token import YouTubeToken
+from app.services.websocket.events import event_service
 from app.services.youtube.client import YouTubeClient
 from app.services.youtube.oauth import YouTubeOAuthService
 from app.services.youtube.quota import YouTubeQuotaService
 from googleapiclient.errors import HttpError
 
 from workers.common.db import get_db_session
+from workers.common.metrics import (  # noqa: E402
+    record_processing,
+    update_queue_depths,
+)
 from workers.common.queue import (
     QUEUE_CLASSIFICATION,
     QueueManager,
@@ -48,6 +59,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 5  # seconds between full polling cycles
+
+
+def strip_html_tags(text: str) -> str:
+    """Remove HTML tags from text."""
+    return re.sub(r"<[^>]+>", "", text)
+
+
 _running = True
 _stats = {"polls": 0, "messages": 0, "errors": 0, "last_log": time.time()}
 
@@ -142,9 +160,9 @@ def poll_session(session_id: str, manager: QueueManager) -> None:
                 comment = Comment(
                     session_id=session.id,
                     youtube_comment_id=msg_data["youtube_comment_id"],
-                    author_name=msg_data["author_name"],
+                    author_name=strip_html_tags(msg_data["author_name"]),
                     author_channel_id=msg_data.get("author_channel_id"),
-                    text=msg_data["text"],
+                    text=strip_html_tags(msg_data["text"]),
                     published_at=published_at,
                 )
                 db.add(comment)
@@ -157,6 +175,18 @@ def poll_session(session_id: str, manager: QueueManager) -> None:
                         session_id=str(session.id),
                     ).to_dict(),
                 )
+
+                # Publish event for WebSocket relay
+                ws_event = event_service.create_comment_created_event(
+                    {
+                        "id": str(comment.id),
+                        "text": comment.text,
+                        "author_name": comment.author_name,
+                        "session_id": str(session.id),
+                    }
+                )
+                redis_client.publish(f"ws:{session.id}", json.dumps(ws_event))
+
                 fetched += 1
 
             db.commit()
@@ -177,6 +207,7 @@ def main() -> None:
 
     while _running:
         _stats["polls"] += 1
+        update_queue_depths(manager)
 
         # Log metrics every 60s
         if time.time() - _stats["last_log"] >= 60:
@@ -202,15 +233,19 @@ def main() -> None:
                 db.close()
 
         if active_session_ids:
+            cycle_start = time.time()
             with ThreadPoolExecutor(max_workers=min(len(active_session_ids), 10)) as executor:
                 futures = {executor.submit(poll_session, sid, manager): sid for sid in active_session_ids}
+                cycle_success = True
                 for future in as_completed(futures):
                     sid = futures[future]
                     try:
                         future.result()
                     except Exception as e:
+                        cycle_success = False
                         _stats["errors"] += 1
                         logger.error(f"Poll error for session {sid}: {e}", exc_info=True)
+            record_processing("youtube_polling", time.time() - cycle_start, cycle_success)
 
         time.sleep(POLL_INTERVAL)
 
@@ -218,4 +253,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    from app.core.config import settings
+
+    if settings.mock_youtube:
+        from workers.youtube_polling.mock_worker import main as mock_main
+
+        mock_main()
+    else:
+        main()

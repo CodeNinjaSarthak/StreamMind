@@ -1,5 +1,6 @@
 """Answer generation worker for creating AI answers."""
 
+import json
 import logging
 import os
 import sys
@@ -11,7 +12,11 @@ _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 sys.path.insert(0, _project_root)
 sys.path.insert(0, os.path.join(_project_root, "backend"))
 
-from app.db.models.answer import Answer
+from workers.common.prometheus_setup import setup_multiproc_dir  # noqa: E402
+
+setup_multiproc_dir()
+
+from app.db.models.answer import Answer  # noqa: E402
 from app.db.models.cluster import Cluster
 from app.db.models.streaming_session import StreamingSession
 from app.db.models.youtube_token import YouTubeToken
@@ -19,14 +24,22 @@ from app.services.gemini.client import (
     GeminiClient,
     vector_to_literal,
 )
+from app.services.moderation import ModerationService
+from app.services.websocket.events import event_service
 from sqlalchemy import text
 
 from workers.common.db import get_db_session
+from workers.common.metrics import (  # noqa: E402
+    gemini_circuit_state,
+    record_processing,
+    update_queue_depths,
+)
 from workers.common.queue import (
     QUEUE_ANSWER_GENERATION,
     QUEUE_YOUTUBE_POSTING,
     QueueManager,
 )
+from workers.common.redis import get_redis_client
 from workers.common.schemas import YouTubePostingPayload
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -40,16 +53,26 @@ def main() -> None:
     logger.info("Starting answer generation worker...")
     gemini_client = GeminiClient()
     manager = QueueManager()
+    redis_client = get_redis_client()
     task = None
+
+    # Wire circuit breaker state into Prometheus
+    _CB_STATE_MAP = {"closed": 0, "half_open": 1, "open": 2}
+    gemini_circuit_state.labels(worker_name="answer_generation").set(0)
+    gemini_client._circuit_breaker._state_change_callback = lambda state: gemini_circuit_state.labels(
+        worker_name="answer_generation"
+    ).set(_CB_STATE_MAP.get(state, 0))
 
     try:
         while True:
             try:
                 task = manager.dequeue(QUEUE_ANSWER_GENERATION)
                 if task is None:
+                    update_queue_depths(manager)
                     time.sleep(POLL_INTERVAL)
                     continue
 
+                proc_start = time.time()
                 cluster_id = task.get("cluster_id")
                 question_texts = task.get("question_texts", [])
 
@@ -60,13 +83,22 @@ def main() -> None:
                             logger.warning(f"Cluster {cluster_id} not found, skipping")
                             break
 
-                        # RAG retrieval via pgvector cosine distance
+                        session = db.query(StreamingSession).filter(StreamingSession.id == cluster.session_id).first()
+                        if not session:
+                            logger.warning(f"Session {cluster.session_id} not found, skipping")
+                            break
+
+                        # RAG retrieval via pgvector cosine distance, scoped to this teacher only
                         rows = db.execute(
                             text(
                                 "SELECT content FROM rag_documents "
+                                "WHERE teacher_id = :teacher_id "
                                 "ORDER BY embedding <-> CAST(:centroid AS vector) LIMIT 5"
                             ),
-                            {"centroid": vector_to_literal(cluster.centroid_embedding)},
+                            {
+                                "centroid": vector_to_literal(cluster.centroid_embedding),
+                                "teacher_id": str(session.teacher_id),
+                            },
                         ).fetchall()
                         context = "\n\n".join(r.content for r in rows) if rows else None
 
@@ -77,13 +109,38 @@ def main() -> None:
                             logger.info("No RAG context for cluster %s — using general knowledge fallback", cluster_id)
                         answer_text = gemini_client.generate_answer(questions_text, context)
 
+                        # Moderate before saving or posting
+                        moderation_service = ModerationService()
+                        is_safe, mod_reason = moderation_service.moderate_answer(answer_text)
+                        if not is_safe:
+                            logger.warning(
+                                "Answer rejected by moderation, skipping save and posting",
+                                extra={"cluster_id": cluster_id, "reason": mod_reason},
+                            )
+                            break
+
                         answer = Answer(cluster_id=cluster.id, text=answer_text, is_posted=False)
                         db.add(answer)
                         db.commit()
                         logger.info(f"Answer generated for cluster {cluster_id}, answer_id={answer.id}")
 
+                        # Publish event for WebSocket relay
+                        try:
+                            event = event_service.create_answer_ready_event(
+                                {
+                                    "answer_id": str(answer.id),
+                                    "cluster_id": str(cluster.id),
+                                }
+                            )
+                            redis_client.publish(f"ws:{cluster.session_id}", json.dumps(event))
+                        except Exception as pub_err:
+                            logger.error(
+                                f"Failed to publish answer_ready event for answer {answer.id}"
+                                f" session {cluster.session_id}: {pub_err}"
+                            )
+
                         # Auto-enqueue to YouTube posting if session has YouTube connected
-                        session = db.query(StreamingSession).filter(StreamingSession.id == cluster.session_id).first()
+                        # session already fetched above for RAG scoping
                         if session and session.youtube_video_id:
                             yt_token = (
                                 db.query(YouTubeToken).filter(YouTubeToken.teacher_id == session.teacher_id).first()
@@ -98,11 +155,13 @@ def main() -> None:
                                 logger.info(f"Enqueued answer {answer.id} for YouTube posting")
                     finally:
                         db.close()
+                record_processing("answer_generation", time.time() - proc_start, True)
                 task = None
 
             except Exception as e:
                 logger.error(f"Worker error: {e}", exc_info=True)
                 if task:
+                    record_processing("answer_generation", time.time() - proc_start, False)
                     manager.retry(QUEUE_ANSWER_GENERATION, task)
                     task = None
                 time.sleep(POLL_INTERVAL)

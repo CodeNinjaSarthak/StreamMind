@@ -96,8 +96,7 @@ class ClusteringPayload:
     """Payload for clustering queue."""
 
     session_id: str
-    comment_ids: List[str]
-    trigger_type: str = "manual"
+    comment_id: str
     task_id: Optional[str] = None
     created_at: Optional[datetime] = None
     retry_count: int = 0
@@ -107,8 +106,7 @@ class ClusteringPayload:
         """Convert to dictionary."""
         return {
             "session_id": self.session_id,
-            "comment_ids": self.comment_ids,
-            "trigger_type": self.trigger_type,
+            "comment_id": self.comment_id,
             "task_id": self.task_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "retry_count": self.retry_count,

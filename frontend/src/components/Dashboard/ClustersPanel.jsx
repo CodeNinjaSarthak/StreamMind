@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { getSessionClusters, approveAnswer, editAnswer, getClusterComments } from '../../services/api';
+import { getSessionClusters, approveAnswer, editAnswer, getClusterComments, getRepresentativeQuestion } from '../../services/api';
 import { showToast } from '../../hooks/useToast';
 import { ClusterDetailsModal } from './ClusterDetailsModal';
+import { Skeleton } from '../Skeleton';
 
 const REFETCH_EVENTS = new Set(['cluster_created', 'cluster_updated', 'answer_ready', 'answer_posted']);
 
@@ -16,7 +17,11 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
   const [clusterFilter, setClusterFilter] = useState('all');
   const [selectedCluster, setSelectedCluster] = useState(null);
   const [modalComments, setModalComments] = useState(null);
+  const [expandedIds, setExpandedIds] = useState(new Set());
+  const [repQuestions, setRepQuestions] = useState({});
   const commentCache = useRef(new Map());
+  const debounceRef = useRef(null);
+  const fetchedClusterIds = useRef(new Set());
 
   async function fetchClusters() {
     const data = await getSessionClusters(sessionId, token);
@@ -54,23 +59,53 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
         handleApprove(latest.id);
       }
     };
-    return () => { approveFirstRef.current = null; }; // cleanup on unmount — prevents stale calls
+    return () => { approveFirstRef.current = null; };
   }, [clusters, approveFirstRef]);
 
-  // WS-triggered refetch — targeted cache invalidation
+  // WS-triggered refetch — debounced
   useEffect(() => {
     if (!wsMessages || wsMessages.length === 0) return;
     const last = wsMessages[wsMessages.length - 1];
     if (last && REFETCH_EVENTS.has(last.type)) {
       const affectedId = last.data?.cluster_id ?? last.data?.id ?? null;
-      if (affectedId) {
-        commentCache.current.delete(affectedId);
-      } else {
-        commentCache.current.clear();
-      }
-      fetchClusters().catch(() => {});
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        if (affectedId) commentCache.current.delete(affectedId);
+        else commentCache.current.clear();
+        fetchClusters().catch(() => {});
+      }, 1000);
     }
+    return () => clearTimeout(debounceRef.current);
   }, [wsMessages]);
+
+  // Reset repQuestions on session change
+  useEffect(() => {
+    fetchedClusterIds.current = new Set();
+    setRepQuestions({});
+  }, [sessionId]);
+
+  // Fetch representative question for each cluster (once per cluster id)
+  useEffect(() => {
+    clusters.forEach(cluster => {
+      if (cluster.comment_count <= 1) return;
+      if (fetchedClusterIds.current.has(cluster.id)) return;
+      fetchedClusterIds.current.add(cluster.id);
+      getRepresentativeQuestion(cluster.id, token)
+        .then(data => {
+          if (data?.text) setRepQuestions(prev => ({ ...prev, [cluster.id]: data.text }));
+        })
+        .catch(() => {});
+    });
+  }, [clusters]);
+
+  function toggleExpand(id) {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   async function openClusterModal(cluster) {
     setSelectedCluster(cluster);
@@ -145,8 +180,11 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
   });
 
   return (
-    <section className="panel">
-      <h2>Clusters &amp; Answers</h2>
+    <section className="panel panel-scrollable panel-clusters">
+      <h2>
+        Clusters &amp; Answers
+        <span className="badge">{clusters.length}</span>
+      </h2>
 
       <div className="filter-tabs">
         {['all', 'pending', 'approved'].map(tab => (
@@ -162,14 +200,12 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
 
       {isLoadingInitial ? (
         <div className="clusters-list">
-          {[1, 2].map(i => (
+          {[1, 2, 3].map(i => (
             <div key={i} className="cluster-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <div className="skeleton" style={{ width: '60%', height: 16 }} />
-                <div className="skeleton" style={{ width: 60, height: 14 }} />
+              <div className="cluster-header">
+                <Skeleton className="sk-cluster-title" />
+                <Skeleton className="sk-cluster-count" />
               </div>
-              <div className="skeleton" style={{ height: 60, marginBottom: 8 }} />
-              <div className="skeleton" style={{ width: 80, height: 28 }} />
             </div>
           ))}
         </div>
@@ -179,10 +215,20 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
         <div className="clusters-list">
           {filteredClusters.length === 0 ? (
             <div className="empty-state">
-              <span className="empty-icon">🤖</span>
-              <p>{clusters.length === 0 ? 'No clusters yet' : 'No clusters match this filter'}</p>
+              <span className="empty-state-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
+                  <line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/>
+                  <line x1="5" y1="19" x2="19" y2="19"/>
+                </svg>
+              </span>
+              <p className="empty-state-title">
+                {clusters.length === 0 ? 'No clusters yet' : 'No clusters match this filter'}
+              </p>
               {clusters.length === 0 && (
-                <p className="empty-hint">Questions cluster automatically after 5 similar ones arrive</p>
+                <p className="empty-state-description">
+                  Clusters form automatically once enough questions arrive
+                </p>
               )}
             </div>
           ) : (
@@ -190,87 +236,104 @@ export function ClustersPanel({ sessionId, token, wsMessages, approveFirstRef })
               const answers = cluster.answers || [];
               const latestAnswer = answers[answers.length - 1];
               const isEditing = latestAnswer && editingAnswerId === latestAnswer.id;
+              const isExpanded = expandedIds.has(cluster.id);
+              const isApproved = latestAnswer?.is_posted === true;
+
               return (
-                <div key={cluster.id} className="cluster-card">
-                  <div className="cluster-header">
-                    <span
-                      className="cluster-title"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => openClusterModal(cluster)}
-                    >
+                <div
+                  key={cluster.id}
+                  className={`cluster-card${isApproved ? ' cluster-approved' : ''}${isExpanded ? ' expanded' : ''}`}
+                >
+                  <div className="cluster-header" onClick={() => toggleExpand(cluster.id)}>
+                    <span className="cluster-title">
                       {cluster.title || 'Untitled Cluster'}
                     </span>
+                    <span className="cluster-count">{cluster.comment_count || 0}q</span>
+                    {isApproved && (
+                      <span className="cluster-approved-badge">✓ POSTED</span>
+                    )}
                     <span
-                      className="cluster-count"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => openClusterModal(cluster)}
+                      className="cluster-expand-icon"
+                      onClick={e => { e.stopPropagation(); openClusterModal(cluster); }}
+                      title="View details"
                     >
-                      {cluster.comment_count || 0} questions
+                      ▼
                     </span>
                   </div>
-                  {latestAnswer ? (
-                    <>
-                      {isEditing ? (
-                        <textarea
-                          value={editedText}
-                          onChange={e => setEditedText(e.target.value)}
-                          style={{ width: '100%', marginBottom: 8, minHeight: 80 }}
-                        />
-                      ) : (
-                        <div className="cluster-answer">{latestAnswer.text}</div>
-                      )}
-                      <div style={{ marginBottom: 6 }}>
-                        <span className={`badge ${latestAnswer.is_posted ? 'badge-posted' : 'badge-pending'}`}>
-                          {latestAnswer.is_posted ? 'Posted' : 'Pending'}
-                        </span>
-                      </div>
-                      <div className="cluster-actions">
-                        {isEditing ? (
-                          <>
-                            <button
-                              className="btn btn-primary btn-sm"
-                              onClick={() => handleSaveEdit(latestAnswer.id)}
-                              disabled={savingId === latestAnswer.id || !editedText.trim()}
-                            >
-                              {savingId === latestAnswer.id ? 'Saving...' : 'Save'}
-                            </button>
-                            <button className="btn btn-sm" onClick={cancelEdit}>
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              className="btn btn-sm"
-                              onClick={() => copyToClipboard(latestAnswer.text)}
-                            >
-                              Copy
-                            </button>
-                            {!latestAnswer.is_posted && (
+                  {repQuestions[cluster.id] && (
+                    <div className="cluster-rep-question">
+                      <span className="cluster-rep-label">Most asked:</span>
+                      {repQuestions[cluster.id]}
+                    </div>
+                  )}
+
+                  <div className={`cluster-body${isExpanded ? ' expanded' : ''}`}>
+                    <div className="cluster-body-inner">
+                      {latestAnswer ? (
+                        <>
+                          {isEditing ? (
+                            <textarea
+                              value={editedText}
+                              onChange={e => setEditedText(e.target.value)}
+                              style={{ width: '100%', marginBottom: 8, minHeight: 80 }}
+                            />
+                          ) : (
+                            <div className="cluster-answer">{latestAnswer.text}</div>
+                          )}
+                          <div style={{ marginBottom: 6 }}>
+                            <span className={`badge ${latestAnswer.is_posted ? 'badge-posted' : 'badge-pending'}`}>
+                              {latestAnswer.is_posted ? 'Posted' : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="cluster-actions">
+                            {isEditing ? (
+                              <>
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  style={{ width: 'auto', marginTop: 0 }}
+                                  onClick={() => handleSaveEdit(latestAnswer.id)}
+                                  disabled={savingId === latestAnswer.id || !editedText.trim()}
+                                >
+                                  {savingId === latestAnswer.id ? 'Saving…' : 'Save'}
+                                </button>
+                                <button className="btn btn-sm" onClick={cancelEdit}>Cancel</button>
+                              </>
+                            ) : (
                               <>
                                 <button
                                   className="btn btn-sm"
-                                  onClick={() => startEdit(latestAnswer)}
-                                  disabled={loading}
+                                  onClick={() => copyToClipboard(latestAnswer.text)}
                                 >
-                                  Edit
+                                  Copy
                                 </button>
-                                <button
-                                  className="btn btn-primary btn-sm"
-                                  onClick={() => handleApprove(latestAnswer.id)}
-                                  disabled={loading}
-                                >
-                                  {loading ? 'Posting...' : 'Approve & Post'}
-                                </button>
+                                {!latestAnswer.is_posted && (
+                                  <>
+                                    <button
+                                      className="btn btn-sm"
+                                      onClick={() => startEdit(latestAnswer)}
+                                      disabled={loading}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      className="btn btn-primary btn-sm"
+                                      style={{ width: 'auto', marginTop: 0 }}
+                                      onClick={() => handleApprove(latestAnswer.id)}
+                                      disabled={loading}
+                                    >
+                                      {loading ? 'Posting…' : 'Approve & Post'}
+                                    </button>
+                                  </>
+                                )}
                               </>
                             )}
-                          </>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="hint">Generating answer...</p>
-                  )}
+                          </div>
+                        </>
+                      ) : (
+                        <p className="hint">Generating answer…</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             })

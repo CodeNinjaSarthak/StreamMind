@@ -103,7 +103,12 @@ async def upload_document(
     base_title = file.filename or "document"
 
     for i, chunk in enumerate(chunks):
-        embedding = gemini.generate_embedding(chunk)
+        try:
+            embedding = gemini.generate_embedding(chunk)
+        except Exception as e:
+            logger.error(f"Embedding generation failed at chunk {i + 1}/{len(chunks)}: {e}")
+            db.rollback()
+            raise HTTPException(status_code=502, detail="Embedding generation failed. Please try again.")
         doc = RAGDocument(
             teacher_id=teacher_id,
             title=f"{base_title} (chunk {i + 1}/{len(chunks)})",

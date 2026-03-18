@@ -30,10 +30,10 @@ export function ActivityLog({ sessionEvents }) {
 
   return (
     <div className="activity-log">
-      {events.map((msg, i) => {
+      {events.map((msg) => {
         const meta = EVENT_META[msg.type];
         return (
-          <div key={i} className="activity-item">
+          <div key={msg.timestamp + '-' + msg.type} className="activity-item">
             <span className="activity-icon">{meta.icon}</span>
             <span className="activity-text">{meta.label(msg.data)}</span>
             <span className="activity-time">{relativeTime(msg.timestamp)}</span>

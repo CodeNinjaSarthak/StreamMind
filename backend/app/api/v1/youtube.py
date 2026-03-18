@@ -105,8 +105,6 @@ async def oauth_callback(
         )
 
     data = json.loads(state_data_raw)
-    _redis.delete(f"yt_state:{state}")
-    _redis.delete(f"yt_state_teacher:{data['teacher_id']}")
 
     oauth_service = YouTubeOAuthService()
     try:
@@ -142,6 +140,10 @@ async def oauth_callback(
     db.commit()
     logger.info(f"YouTube token stored for teacher {teacher_id}")
 
+    # Delete Redis state after successful DB commit — if this fails, keys expire via TTL
+    _redis.delete(f"yt_state:{state}")
+    _redis.delete(f"yt_state_teacher:{data['teacher_id']}")
+
     return HTMLResponse(content=_OAUTH_SUCCESS_HTML)
 
 
@@ -158,9 +160,17 @@ async def refresh_token(
             detail="No YouTube token found",
         )
 
+    try:
+        decrypted_refresh = decrypt_data(token.refresh_token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="YouTube token is invalid or corrupted. Please reconnect your YouTube account.",
+        )
+
     oauth_service = YouTubeOAuthService()
     try:
-        refreshed = oauth_service.refresh_token(decrypt_data(token.refresh_token))
+        refreshed = oauth_service.refresh_token(decrypted_refresh)
     except Exception as e:
         logger.error(f"Token refresh failed: {e}")
         raise HTTPException(
@@ -219,7 +229,14 @@ async def get_video_info(
             detail="YouTube not connected",
         )
 
-    access_token = decrypt_data(token.access_token)
+    try:
+        access_token = decrypt_data(token.access_token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="YouTube token is invalid or corrupted. Please reconnect your YouTube account.",
+        )
+
     client = YouTubeClient(access_token)
     try:
         info = client.get_video_info(video_id)
@@ -249,7 +266,14 @@ async def validate_video(
     if not token:
         return {"valid": False, "is_live": False, "title": ""}
 
-    access_token = decrypt_data(token.access_token)
+    try:
+        access_token = decrypt_data(token.access_token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="YouTube token is invalid or corrupted. Please reconnect your YouTube account.",
+        )
+
     client = YouTubeClient(access_token)
     try:
         info = client.get_video_info(video_id)

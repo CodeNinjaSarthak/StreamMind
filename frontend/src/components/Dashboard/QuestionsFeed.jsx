@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getSessionComments } from '../../services/api';
+import { Skeleton } from '../Skeleton';
 
 const PAGE_SIZE = 20;
 
@@ -85,7 +86,7 @@ export function QuestionsFeed({ sessionId, token, wsMessages }) {
     : comments;
 
   return (
-    <section className="panel">
+    <section className="panel panel-scrollable panel-feed">
       <h2>
         Live Feed{' '}
         <span className="badge">{comments.length}</span>
@@ -108,11 +109,11 @@ export function QuestionsFeed({ sessionId, token, wsMessages }) {
 
       {isLoadingInitial ? (
         <div className="questions-feed">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3, 4, 5].map(i => (
             <div key={i} className="feed-item">
-              <div className="skeleton" style={{ width: 60, height: 14 }} />
-              <div className="skeleton" style={{ flex: 1, height: 14 }} />
-              <div className="skeleton" style={{ width: 70, height: 18, borderRadius: 12 }} />
+              <Skeleton className="sk-feed-author" />
+              <Skeleton className="sk-feed-text" />
+              <Skeleton className="sk-feed-badge" />
             </div>
           ))}
         </div>
@@ -123,10 +124,18 @@ export function QuestionsFeed({ sessionId, token, wsMessages }) {
           <div className="questions-feed">
             {filteredComments.length === 0 ? (
               <div className="empty-state">
-                <span className="empty-icon">📝</span>
-                <p>{debouncedQuery ? 'No matching questions' : 'No questions yet'}</p>
+                <span className="empty-state-icon">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </span>
+                <p className="empty-state-title">
+                  {debouncedQuery ? 'No matching questions' : 'No questions yet'}
+                </p>
                 {!debouncedQuery && (
-                  <p className="empty-hint">Connect YouTube or submit manual questions above to get started</p>
+                  <p className="empty-state-description">
+                    Questions from your live stream will appear here
+                  </p>
                 )}
               </div>
             ) : (

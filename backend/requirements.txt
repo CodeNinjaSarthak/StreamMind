@@ -4,6 +4,7 @@ aiosignal==1.4.0
 alembic==1.14.0
 annotated-types==0.7.0
 anyio==4.12.0
+apscheduler==3.10.4
 attrs==25.4.0
 bcrypt==4.1.2
 black==26.3.0

@@ -1,21 +1,41 @@
-"""Token cleanup background task."""
+"""Token cleanup task — removes unrecoverable expired YouTube tokens."""
 
-from app.core.logging import get_logger
+import logging
+from datetime import (
+    datetime,
+    timezone,
+)
 
-logger = get_logger(__name__)
+from app.db.models.youtube_token import YouTubeToken
+from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 
-async def cleanup_expired_tokens() -> None:
-    """Clean up expired OAuth tokens.
+def cleanup_expired_tokens(db: Session) -> None:
+    """Delete YouTubeToken rows that are expired and have no refresh token.
 
-    This task should run periodically to remove expired tokens.
+    Tokens with a refresh_token can be renewed by the application — those are
+    left alone. Only tokens that are both expired AND unrefreshable are removed.
     """
-    logger.info("Starting token cleanup task")
-    # TODO: Implement actual token cleanup logic
-    logger.info("Token cleanup task completed")
+    now = datetime.now(timezone.utc)
 
+    deleted = (
+        db.query(YouTubeToken)
+        .filter(
+            YouTubeToken.expires_at <= now,
+            YouTubeToken.refresh_token.is_(None),
+        )
+        .all()
+    )
 
-async def schedule_token_cleanup() -> None:
-    """Schedule token cleanup task."""
-    # TODO: Implement scheduling logic
-    pass
+    if not deleted:
+        logger.debug("No expired unrecoverable tokens found")
+        return
+
+    count = len(deleted)
+    for token in deleted:
+        db.delete(token)
+
+    db.commit()
+    logger.info(f"Deleted {count} expired unrecoverable YouTube token(s)")
