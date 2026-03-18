@@ -26,7 +26,7 @@ export function LoginForm() {
 
   return (
     <div className="auth-card">
-      <h1>AI Live Doubt Manager</h1>
+      <h1>StreamMind</h1>
       <h2>Sign In</h2>
       {error && <p className="error-msg">{error}</p>}
       <form onSubmit={handleSubmit}>

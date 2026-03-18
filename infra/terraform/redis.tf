@@ -8,7 +8,7 @@ variable "redis_node_type" {
 
 # TODO: Add actual Redis resource definitions
 # resource "aws_elasticache_cluster" "redis" {
-#   cluster_id = "ai-doubt-manager-redis"
+#   cluster_id = "streammind-redis"
 #   engine     = "redis"
 #   node_type  = var.redis_node_type
 # }

@@ -4,7 +4,7 @@ import { websocket } from './websocket';
 import { quota } from './quota';
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('AI Live Doubt Manager extension installed');
+  console.log('StreamMind extension installed');
 });
 
 // Initialize services

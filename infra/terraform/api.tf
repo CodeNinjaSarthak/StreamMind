@@ -8,6 +8,6 @@ variable "api_instance_type" {
 
 # TODO: Add actual API resource definitions
 # resource "aws_ecs_service" "api" {
-#   name = "ai-doubt-manager-api"
+#   name = "streammind-api"
 # }
 

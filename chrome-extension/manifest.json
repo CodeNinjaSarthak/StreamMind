@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Live Doubt Manager",
+  "name": "StreamMind",
   "version": "1.0.0",
   "description": "Manage live doubt sessions with YouTube integration",
   "permissions": [
@@ -26,7 +26,7 @@
   ],
   "action": {
     "default_popup": "dashboard/background.html",
-    "default_title": "AI Live Doubt Manager"
+    "default_title": "StreamMind"
   },
   "web_accessible_resources": [
     {

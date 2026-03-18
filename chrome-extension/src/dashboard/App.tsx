@@ -10,7 +10,7 @@ export const App: React.FC = () => {
 
   return (
     <div style={{ width: '400px', padding: '20px' }}>
-      <h1>AI Live Doubt Manager</h1>
+      <h1>StreamMind</h1>
       <p>Status: {status}</p>
       <button onClick={() => setStatus('connected')}>Connect</button>
     </div>

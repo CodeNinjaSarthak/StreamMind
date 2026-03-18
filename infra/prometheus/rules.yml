@@ -1,5 +1,5 @@
 groups:
-  - name: ai_doubt_manager_alerts
+  - name: streammind_alerts
     rules:
       - alert: HighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1

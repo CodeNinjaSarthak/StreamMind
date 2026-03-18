@@ -11,7 +11,7 @@
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
 2. Click **Select a project** → **New Project**
-3. Name it (e.g., "AI Doubt Manager") and click **Create**
+3. Name it (e.g., "StreamMind") and click **Create**
 
 ---
 
@@ -28,7 +28,7 @@
 1. Go to **APIs & Services → OAuth consent screen**
 2. Select **External** (unless you have a Google Workspace account)
 3. Fill in required fields:
-   - App name: `AI Doubt Manager`
+   - App name: `StreamMind`
    - User support email: your email
    - Developer contact email: your email
 4. Click **Save and Continue** through the remaining steps
@@ -44,7 +44,7 @@
 1. Go to **APIs & Services → Credentials**
 2. Click **Create Credentials → OAuth 2.0 Client ID**
 3. Select **Web application**
-4. Set the name (e.g., "AI Doubt Manager Web")
+4. Set the name (e.g., "StreamMind Web")
 5. Under **Authorized redirect URIs**, add:
    ```
    http://localhost:8000/api/v1/youtube/auth/callback

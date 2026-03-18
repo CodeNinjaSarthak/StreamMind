@@ -36,7 +36,7 @@ docker-compose up -d postgres redis
 
 # Run migrations
 cd backend
-DATABASE_URL=postgresql://user:password@localhost:5432/ai_doubt_manager_dev alembic upgrade head
+DATABASE_URL=postgresql://user:password@localhost:5432/streammind_dev alembic upgrade head
 
 # Start backend
 cd backend

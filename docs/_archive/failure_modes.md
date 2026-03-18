@@ -1,6 +1,6 @@
 # Failure Modes and Recovery
 
-This document describes potential failure scenarios, detection methods, recovery mechanisms, and monitoring strategies for the AI Live Doubt Manager system.
+This document describes potential failure scenarios, detection methods, recovery mechanisms, and monitoring strategies for the StreamMind system.
 
 ---
 
@@ -673,7 +673,7 @@ When production incident occurs:
 - [ ] Restart services: `docker-compose restart api workers`
 - [ ] Clear stuck queues: `redis-cli DEL classification`
 - [ ] Scale workers: `docker-compose up --scale workers=5`
-- [ ] Check database: `psql -d ai_doubt_manager -c "SELECT 1"`
+- [ ] Check database: `psql -d streammind -c "SELECT 1"`
 
 ### 5. Post-Incident
 - [ ] Document root cause

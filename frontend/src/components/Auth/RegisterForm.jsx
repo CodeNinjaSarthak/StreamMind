@@ -27,7 +27,7 @@ export function RegisterForm() {
 
   return (
     <div className="auth-card">
-      <h1>AI Live Doubt Manager</h1>
+      <h1>StreamMind</h1>
       <h2>Create Account</h2>
       {error && <p className="error-msg">{error}</p>}
       <form onSubmit={handleSubmit}>

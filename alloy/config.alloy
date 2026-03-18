@@ -16,7 +16,7 @@ prometheus.remote_write "grafana_cloud" {
     }
   }
   external_labels = {
-    job         = "ai_doubt_manager",
+    job         = "streammind",
     environment = "development",
   }
 }

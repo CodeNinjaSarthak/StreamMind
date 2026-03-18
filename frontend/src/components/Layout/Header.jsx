@@ -16,7 +16,7 @@ export function Header({ connected = false, reconnecting = false, activeSession 
 
   return (
     <header className="app-header">
-      <div className="header-wordmark">AI Doubt Manager</div>
+      <div className="header-wordmark">StreamMind</div>
 
       <div className="header-center">
         {activeSession && (

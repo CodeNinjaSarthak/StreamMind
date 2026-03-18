@@ -1,7 +1,7 @@
 .PHONY: help run-backend run-workers format lint test test-coverage install clean migrate migration downgrade db-init
 
 help:
-	@echo "AI Live Doubt Manager - Makefile Commands"
+	@echo "StreamMind - Makefile Commands"
 	@echo ""
 	@echo "Development:"
 	@echo "  make run-backend       - Start FastAPI backend server"

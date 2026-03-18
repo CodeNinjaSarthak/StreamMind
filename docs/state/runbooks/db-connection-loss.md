@@ -27,7 +27,7 @@
 
 3. **Test DB connectivity directly:**
    ```bash
-   psql postgresql://user:password@localhost:5432/ai_doubt_manager_dev -c "SELECT 1;"
+   psql postgresql://user:password@localhost:5432/streammind_dev -c "SELECT 1;"
    ```
 
 4. **Check PostgreSQL is running:**

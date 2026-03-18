@@ -6,7 +6,7 @@
 
 ## System Purpose
 
-AI Live Doubt Manager helps teachers manage live YouTube teaching sessions at scale. It polls the YouTube live chat in real time, uses Gemini AI to classify and cluster student questions, generates RAG-augmented answers, and delivers them back to the teacher's dashboard over WebSocket — with optional posting directly to the YouTube stream.
+StreamMind helps teachers manage live YouTube teaching sessions at scale. It polls the YouTube live chat in real time, uses Gemini AI to classify and cluster student questions, generates RAG-augmented answers, and delivers them back to the teacher's dashboard over WebSocket — with optional posting directly to the YouTube stream.
 
 **Users:** Teachers running live YouTube educational sessions.
 **Problem:** Live chat during popular sessions becomes an unreadable flood. Genuine student questions get buried. Teachers cannot respond to questions at scale.

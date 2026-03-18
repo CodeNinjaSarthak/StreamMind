@@ -1,10 +1,10 @@
 # Architecture Overview
 
-This document describes the system architecture of the AI Live Doubt Manager, a production-grade platform for managing live Q&A sessions during YouTube live streams using AI-powered question clustering and answer generation.
+This document describes the system architecture of StreamMind, a production-grade platform for managing live Q&A sessions during YouTube live streams using AI-powered question clustering and answer generation.
 
 ## System Overview
 
-The AI Live Doubt Manager automatically collects questions from YouTube live chat, classifies them, groups similar questions into clusters, and generates AI-powered answers for educators to review and post back to the audience.
+StreamMind automatically collects questions from YouTube live chat, classifies them, groups similar questions into clusters, and generates AI-powered answers for educators to review and post back to the audience.
 
 **Tech Stack:**
 - **Backend:** FastAPI, SQLAlchemy, PostgreSQL with pgvector, Redis

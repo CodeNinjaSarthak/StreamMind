@@ -9,7 +9,7 @@ export default function LandingPage() {
     <div className="landing">
       {/* Header */}
       <header className="landing-header anim-nav">
-        <span className="logo">AI Doubt Manager</span>
+        <span className="logo">StreamMind</span>
         <nav className="landing-nav">
           <Link to="/login" className="btn btn-sm">Login</Link>
           <Link to="/register" className="btn btn-primary btn-sm">Get Started</Link>
@@ -18,7 +18,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="landing-hero">
-        <h1 className="anim-1">AI Live Doubt Manager</h1>
+        <h1 className="anim-1">StreamMind</h1>
         <p className="tagline anim-2">Intelligent Q&A management for YouTube live streams</p>
         <p className="subtitle anim-3">
           Automatically detect, cluster, and answer student questions in real-time using AI

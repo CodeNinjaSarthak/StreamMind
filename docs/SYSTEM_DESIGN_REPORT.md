@@ -1,4 +1,4 @@
-# System Design Specification Report: AI Live Doubt Manager
+# System Design Specification Report: StreamMind
 
 > **Prepared for**: Senior Consultant Deep-Dive Audit
 > **Date**: 2026-03-13

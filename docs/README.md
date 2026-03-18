@@ -1,4 +1,4 @@
-# AI Live Doubt Manager — Documentation
+# StreamMind — Documentation
 
 > Master navigation index. Find the right file by asking "what question am I answering?"
 

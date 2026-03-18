@@ -8,7 +8,7 @@ variable "db_instance_class" {
 
 # TODO: Add actual database resource definitions
 # resource "aws_db_instance" "main" {
-#   identifier = "ai-doubt-manager-db"
+#   identifier = "streammind-db"
 #   engine     = "postgres"
 #   instance_class = var.db_instance_class
 # }

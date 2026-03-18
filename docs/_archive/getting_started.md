@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide will help you set up and run the AI Live Doubt Manager system locally for development.
+This guide will help you set up and run the StreamMind system locally for development.
 
 ## Prerequisites
 
@@ -115,7 +115,7 @@ sudo systemctl start postgresql
 **Create Database:**
 ```bash
 psql postgres
-CREATE DATABASE ai_doubt_manager;
+CREATE DATABASE streammind;
 CREATE EXTENSION vector;
 \q
 ```
@@ -148,7 +148,7 @@ ENVIRONMENT=development
 DEBUG=true
 
 # Database - Update with your PostgreSQL credentials
-DATABASE_URL=postgresql://user:password@localhost:5432/ai_doubt_manager
+DATABASE_URL=postgresql://user:password@localhost:5432/streammind
 
 # Redis
 REDIS_URL=redis://localhost:6379/0
@@ -199,7 +199,7 @@ cd backend && alembic upgrade head
 
 **Verify tables were created:**
 ```bash
-psql ai_doubt_manager -c "\dt"
+psql streammind -c "\dt"
 ```
 
 ### 7. Run the System
@@ -231,7 +231,7 @@ make run-workers
 ```bash
 # Backend running
 curl http://localhost:8000
-# Returns: {"app_name":"AI Live Doubt Manager","version":"1.0.0",...}
+# Returns: {"app_name":"StreamMind","version":"1.0.0",...}
 
 # Health check
 curl http://localhost:8000/health
@@ -516,8 +516,8 @@ brew services list  # macOS
 sudo systemctl status postgresql  # Linux
 
 # Verify DATABASE_URL in .env matches your setup
-# Docker: postgresql://user:password@postgres:5432/ai_doubt_manager
-# Manual: postgresql://user:password@localhost:5432/ai_doubt_manager
+# Docker: postgresql://user:password@postgres:5432/streammind
+# Manual: postgresql://user:password@localhost:5432/streammind
 ```
 
 ### Redis connection timeout
@@ -583,7 +583,7 @@ curl http://localhost:8000/metrics | grep worker_heartbeat
 
 4. **Reload Extension:**
    - Go to `chrome://extensions/`
-   - Click reload icon on AI Live Doubt Manager extension
+   - Click reload icon on StreamMind extension
 
 ### YouTube API quota exceeded
 
@@ -633,9 +633,9 @@ alembic history
 
 # If conflicts exist, resolve manually or reset:
 # WARNING: This drops all data
-dropdb ai_doubt_manager
-createdb ai_doubt_manager
-psql ai_doubt_manager -c "CREATE EXTENSION vector;"
+dropdb streammind
+createdb streammind
+psql streammind -c "CREATE EXTENSION vector;"
 alembic upgrade head
 ```
 

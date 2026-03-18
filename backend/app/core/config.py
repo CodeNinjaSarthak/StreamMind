@@ -35,13 +35,13 @@ class Settings(BaseSettings):
     )
 
     # Application metadata
-    app_name: str = "AI Live Doubt Manager"
+    app_name: str = "StreamMind"
     app_version: str = "1.0.0"
     debug: bool = False
 
     # Database
     database_url: str = Field(
-        default="postgresql://user:pass@localhost:5432/ai_doubt_manager", description="PostgreSQL database URL"
+        default="postgresql://user:pass@localhost:5432/streammind", description="PostgreSQL database URL"
     )
     database_echo: bool = False
     database_pool_size: int = 5

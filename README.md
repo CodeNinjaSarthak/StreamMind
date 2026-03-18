@@ -1,4 +1,4 @@
-# AI Powered Live Doubt Manager
+# StreamMind
 
 > Real-time semantic clustering of YouTube live chat via Gemini embeddings, pgvector cosine search, and a 6-stage Redis worker pipeline — with RAG-augmented answer generation and WebSocket delivery.
 

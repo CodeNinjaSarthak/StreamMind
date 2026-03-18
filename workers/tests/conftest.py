@@ -19,7 +19,7 @@ os.environ.setdefault("GEMINI_API_KEY", "test-key-placeholder")
 
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql://sarthak@localhost:5432/ai_doubt_manager_test",
+    "postgresql://sarthak@localhost:5432/streammind_test",
 )
 
 engine = create_engine(TEST_DATABASE_URL, echo=False)

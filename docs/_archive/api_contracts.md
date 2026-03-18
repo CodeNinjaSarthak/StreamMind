@@ -1,6 +1,6 @@
 # API Contracts
 
-This document provides detailed API contract specifications for the AI Live Doubt Manager system, including request/response schemas, authentication requirements, and WebSocket event formats.
+This document provides detailed API contract specifications for the StreamMind system, including request/response schemas, authentication requirements, and WebSocket event formats.
 
 **Base URL:** `http://localhost:8000`
 **API Prefix:** `/api/v1`
@@ -678,7 +678,7 @@ Root endpoint returning application metadata.
 **Response:** `200 OK`
 ```json
 {
-  "app_name": "AI Live Doubt Manager",
+  "app_name": "StreamMind",
   "version": "1.0.0",
   "environment": "development",
   "status": "ok"
