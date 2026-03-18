@@ -83,13 +83,22 @@ def main() -> None:
                             logger.warning(f"Cluster {cluster_id} not found, skipping")
                             break
 
-                        # RAG retrieval via pgvector cosine distance
+                        session = db.query(StreamingSession).filter(StreamingSession.id == cluster.session_id).first()
+                        if not session:
+                            logger.warning(f"Session {cluster.session_id} not found, skipping")
+                            break
+
+                        # RAG retrieval via pgvector cosine distance, scoped to this teacher only
                         rows = db.execute(
                             text(
                                 "SELECT content FROM rag_documents "
+                                "WHERE teacher_id = :teacher_id "
                                 "ORDER BY embedding <-> CAST(:centroid AS vector) LIMIT 5"
                             ),
-                            {"centroid": vector_to_literal(cluster.centroid_embedding)},
+                            {
+                                "centroid": vector_to_literal(cluster.centroid_embedding),
+                                "teacher_id": str(session.teacher_id),
+                            },
                         ).fetchall()
                         context = "\n\n".join(r.content for r in rows) if rows else None
 
@@ -131,7 +140,7 @@ def main() -> None:
                             )
 
                         # Auto-enqueue to YouTube posting if session has YouTube connected
-                        session = db.query(StreamingSession).filter(StreamingSession.id == cluster.session_id).first()
+                        # session already fetched above for RAG scoping
                         if session and session.youtube_video_id:
                             yt_token = (
                                 db.query(YouTubeToken).filter(YouTubeToken.teacher_id == session.teacher_id).first()
