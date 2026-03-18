@@ -23,6 +23,7 @@ class WebSocketEventType(str, Enum):
 
     COMMENT_CREATED = "comment_created"
     COMMENT_CLASSIFIED = "comment_classified"
+    COMMENT_EMBEDDED = "comment_embedded"
 
     CLUSTER_CREATED = "cluster_created"
     CLUSTER_UPDATED = "cluster_updated"
@@ -105,6 +106,21 @@ class WebSocketEventService:
             WebSocketEventType.COMMENT_CLASSIFIED,
             data={"comment_id": comment_id, "is_question": is_question, "confidence": confidence},
             message=f"Comment classified as {'question' if is_question else 'not a question'}",
+        )
+
+    def create_comment_embedded_event(self, comment_id: str) -> Dict[str, Any]:
+        """Create a comment embedded event.
+
+        Args:
+            comment_id: Comment identifier.
+
+        Returns:
+            Event message dictionary.
+        """
+        return self.create_base_event(
+            WebSocketEventType.COMMENT_EMBEDDED,
+            data={"comment_id": comment_id},
+            message="Comment embedding generated",
         )
 
     def create_cluster_created_event(self, cluster_data: Dict[str, Any]) -> Dict[str, Any]:

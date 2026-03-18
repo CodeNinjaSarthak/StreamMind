@@ -1,0 +1,22 @@
+prometheus.scrape "fastapi" {
+  targets = [{
+    __address__ = "localhost:8000",
+  }]
+  metrics_path    = "/metrics"
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GCLOUD_HOSTED_METRICS_URL")
+    basic_auth {
+      username = sys.env("GCLOUD_HOSTED_METRICS_ID")
+      password = sys.env("GCLOUD_RW_API_KEY")
+    }
+  }
+  external_labels = {
+    job         = "ai_doubt_manager",
+    environment = "development",
+  }
+}

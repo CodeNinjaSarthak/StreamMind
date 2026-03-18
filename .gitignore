@@ -100,3 +100,8 @@ logs/
 *.seed
 tmp/
 *.bak
+
+CLAUDE.md
+.claude
+
+data-alloy

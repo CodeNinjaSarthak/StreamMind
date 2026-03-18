@@ -1,3 +1,4 @@
+# STUB — not wired up. Workers are started via ./start_dev.sh, not this file.
 """Worker runner for orchestrating multiple workers."""
 
 import logging

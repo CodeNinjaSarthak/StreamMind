@@ -1,15 +1,23 @@
 """Prometheus metrics for observability."""
 
-from app.core.config import settings
-from prometheus_client import (
+import os
+
+# Must be set BEFORE importing prometheus_client for multiprocess mode
+os.environ.setdefault("PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus_multiproc")
+os.makedirs("/tmp/prometheus_multiproc", exist_ok=True)
+
+from app.core.config import settings  # noqa: E402
+from prometheus_client import (  # noqa: E402
     CONTENT_TYPE_LATEST,
+    CollectorRegistry,
     Counter,
     Gauge,
     Histogram,
     generate_latest,
+    multiprocess,
 )
-from starlette.requests import Request
-from starlette.responses import Response
+from starlette.requests import Request  # noqa: E402
+from starlette.responses import Response  # noqa: E402
 
 http_requests_total = Counter("http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"])
 
@@ -18,7 +26,10 @@ http_request_duration_seconds = Histogram(
 )
 
 websocket_connections_active = Gauge(
-    "websocket_connections_active", "Number of active WebSocket connections", ["session_id"]
+    "websocket_connections_active",
+    "Number of active WebSocket connections",
+    ["session_id"],
+    multiprocess_mode="liveall",
 )
 
 websocket_messages_total = Counter("websocket_messages_total", "Total WebSocket messages", ["type", "direction"])
@@ -31,30 +42,34 @@ database_query_duration_seconds = Histogram(
 
 redis_operations_total = Counter("redis_operations_total", "Total Redis operations", ["operation"])
 
-queue_size = Gauge("queue_size", "Number of items in queue", ["queue_name"])
+queue_size = Gauge("queue_size", "Number of items in queue", ["queue_name"], multiprocess_mode="liveall")
 
 queue_processed_total = Counter("queue_processed_total", "Total queue items processed", ["queue_name", "status"])
 
-worker_heartbeat = Gauge("worker_heartbeat", "Worker last heartbeat timestamp", ["worker_name"])
+worker_heartbeat = Gauge(
+    "worker_heartbeat", "Worker last heartbeat timestamp", ["worker_name"], multiprocess_mode="liveall"
+)
 
-quota_usage = Gauge("quota_usage", "Quota usage", ["teacher_id", "quota_type"])
+quota_usage = Gauge("quota_usage", "Quota usage", ["teacher_id", "quota_type"], multiprocess_mode="liveall")
 
-quota_limit = Gauge("quota_limit", "Quota limit", ["teacher_id", "quota_type"])
+quota_limit = Gauge("quota_limit", "Quota limit", ["teacher_id", "quota_type"], multiprocess_mode="liveall")
 
 
 async def metrics_endpoint(request: Request) -> Response:
-    """Prometheus metrics endpoint.
+    """Prometheus metrics endpoint using multiprocess collector.
 
     Args:
         request: Incoming request.
 
     Returns:
-        Metrics response.
+        Metrics response in Prometheus text format.
     """
     if not settings.enable_metrics:
         return Response("Metrics disabled", status_code=404)
 
-    metrics_data = generate_latest()
+    registry = CollectorRegistry()
+    multiprocess.MultiProcessCollector(registry)
+    metrics_data = generate_latest(registry)
     return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
 
 

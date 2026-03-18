@@ -1,6 +1,7 @@
 """Teacher dashboard API routes."""
 
 import logging
+import re
 from datetime import (
     datetime,
     timezone,
@@ -32,6 +33,8 @@ from pydantic import (
     BaseModel,
     Field,
 )
+from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -70,7 +73,7 @@ async def submit_manual_question(
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
-    texts = [t.strip() for t in payload.text.split("\n") if t.strip()]
+    texts = [re.sub(r"<[^>]+>", "", t).strip() for t in payload.text.split("\n") if t.strip()]
     created_count = 0
     manager = QueueManager()
 
@@ -82,7 +85,11 @@ async def submit_manual_question(
             text=text,
         )
         db.add(comment)
-        db.flush()
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Duplicate question submission.")
         manager.enqueue(
             QUEUE_CLASSIFICATION,
             ClassificationPayload(
@@ -125,8 +132,18 @@ async def approve_answer(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Answer not found")
 
     answer, cluster, session = result
-    if answer.is_posted:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already posted")
+
+    rows_updated = db.execute(
+        update(Answer)
+        .where(Answer.id == answer_id, Answer.is_posted == False)  # noqa: E712
+        .values(is_posted=True, posted_at=datetime.now(timezone.utc))
+    ).rowcount
+
+    if rows_updated == 0:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already approved")
+
+    db.commit()
+    db.refresh(answer)
 
     yt_token = db.query(YouTubeToken).filter(YouTubeToken.teacher_id == current_user.id).first()
 
@@ -140,16 +157,11 @@ async def approve_answer(
             ).to_dict(),
         )
         logger.info(f"Enqueued answer {answer_id} for YouTube posting")
-    else:
-        answer.is_posted = True
-        answer.posted_at = datetime.now(timezone.utc)
-        db.commit()
 
-    db.refresh(answer)
     return answer
 
 
-@router.post("/answers/{answer_id}/edit", response_model=AnswerResponse)
+@router.patch("/answers/{answer_id}", response_model=AnswerResponse)
 async def edit_answer(
     answer_id: UUID,
     payload: AnswerUpdate,
@@ -217,3 +229,48 @@ async def get_session_stats(
         "answers_generated": answers_generated,
         "answers_posted": answers_posted,
     }
+
+
+@router.get("/clusters/{cluster_id}/representative")
+async def get_representative_question(
+    cluster_id: UUID,
+    current_user: Teacher = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Return the comment whose embedding is closest to the cluster centroid."""
+    from sqlalchemy import text as sa_text
+
+    cluster = (
+        db.query(Cluster)
+        .join(StreamingSession, Cluster.session_id == StreamingSession.id)
+        .filter(
+            Cluster.id == cluster_id,
+            StreamingSession.teacher_id == current_user.id,
+        )
+        .first()
+    )
+    if not cluster:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+    if cluster.centroid_embedding is None:
+        raise HTTPException(status_code=404, detail="No centroid available")
+
+    centroid_str = "[" + ",".join(str(v) for v in cluster.centroid_embedding) + "]"
+
+    row = db.execute(
+        sa_text("""
+            SELECT c.id, c.text,
+                   1 - (c.embedding <=> CAST(:centroid AS vector)) AS similarity
+            FROM comments c
+            WHERE c.cluster_id = :cluster_id
+              AND c.is_question = TRUE
+              AND c.embedding IS NOT NULL
+            ORDER BY c.embedding <=> CAST(:centroid AS vector)
+            LIMIT 1
+        """),
+        {"centroid": centroid_str, "cluster_id": str(cluster_id)},
+    ).first()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="No representative question found")
+
+    return {"comment_id": str(row.id), "text": row.text, "similarity": float(row.similarity)}

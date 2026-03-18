@@ -12,24 +12,33 @@ export function Header({ connected = false, reconnecting = false, activeSession 
     navigate('/');
   }
 
+  const dotClass = `connection-dot ${reconnecting ? 'reconnecting' : connected ? 'connected' : 'connecting'}`;
+
   return (
     <header className="app-header">
-      <div className="header-left">
-        <span className="logo">AI Doubt Manager</span>
-      </div>
-      <div className="header-right" style={{ gap: 8 }}>
+      <div className="header-wordmark">AI Doubt Manager</div>
+
+      <div className="header-center">
         {activeSession && (
-          <span className={`connection-status ${reconnecting ? 'reconnecting' : connected ? 'connected' : 'connecting'}`}>
-            {reconnecting ? '🟡 Reconnecting...' : connected ? '🟢 Connected' : '⚪ Connecting...'}
-          </span>
+          <>
+            <span className="header-session-name">{activeSession.title}</span>
+            <span className="live-badge">
+              <span className="live-badge-dot" />
+              LIVE
+            </span>
+          </>
         )}
-        {displayName && <span className="user-name">{displayName}</span>}
+      </div>
+
+      <div className="header-right">
+        {activeSession && <span className={dotClass} title={reconnecting ? 'Reconnecting…' : connected ? 'Connected' : 'Connecting…'} />}
+        {displayName && <span className="header-user-email">{displayName}</span>}
         <button
           onClick={toggleTheme}
           className="btn btn-sm"
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          {theme === 'dark' ? '☀ Light' : '🌙 Dark'}
+          {theme === 'dark' ? '☀' : '🌙'}
         </button>
         <Link to="/settings" className="btn btn-sm">Settings</Link>
         <button onClick={handleLogout} className="btn btn-sm">Logout</button>

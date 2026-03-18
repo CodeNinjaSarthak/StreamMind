@@ -6,6 +6,8 @@ export function ManualInput({ sessionId, token, textareaRef }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'success'|'error', text }
 
+  const lineCount = text ? text.split('\n').filter(l => l.trim()).length : 0;
+
   async function handleSubmit(e) {
     e.preventDefault();
     const trimmed = text.trim();
@@ -30,22 +32,29 @@ export function ManualInput({ sessionId, token, textareaRef }) {
   return (
     <section className="panel">
       <h2>Manual Questions</h2>
-      <p className="hint">Enter questions (one per line, up to 10).</p>
+      <p className="hint">One question per line, up to 10.</p>
       <form onSubmit={handleSubmit}>
         <textarea
           ref={textareaRef}
           value={text}
           onChange={e => setText(e.target.value)}
-          rows={5}
+          rows={4}
           placeholder={"What is Newton's first law?\nHow do I solve quadratic equations?"}
+          style={{ fontFamily: 'var(--font-display)', fontSize: 11 }}
         />
+        <p className="hint" style={{ textAlign: 'right', marginBottom: 4, marginTop: 2 }}>
+          {lineCount} / 10
+        </p>
         {message && (
-          <p className={message.type === 'error' ? 'error-msg' : ''} style={message.type === 'success' ? { color: 'var(--color-success)', fontSize: 13, marginTop: 4 } : {}}>
+          <p
+            className={message.type === 'error' ? 'error-msg' : ''}
+            style={message.type === 'success' ? { color: 'var(--color-success)', fontSize: 11, marginTop: 2, marginBottom: 4 } : {}}
+          >
             {message.text}
           </p>
         )}
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? 'Submitting...' : 'Submit Questions'}
+        <button type="submit" className="btn btn-primary" disabled={loading || lineCount === 0}>
+          {loading ? 'Submitting…' : 'Submit Questions'}
         </button>
       </form>
     </section>

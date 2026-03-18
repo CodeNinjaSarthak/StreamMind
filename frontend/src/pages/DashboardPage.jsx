@@ -11,11 +11,15 @@ import { QuestionsFeed } from '../components/Dashboard/QuestionsFeed';
 import { ClustersPanel } from '../components/Dashboard/ClustersPanel';
 import { DocumentUpload } from '../components/Dashboard/DocumentUpload';
 import { AnalyticsPanel } from '../components/Dashboard/AnalyticsPanel';
+import { QuotaBanner } from '../components/Dashboard/QuotaBanner';
 
 export function DashboardPage() {
   const { token } = useAuth();
   const [activeSession, setActiveSession] = useState(null);
   const { messages: wsMessages, connected, reconnecting } = useWebSocket(activeSession?.id, token);
+
+  // Sidebar collapse state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Shortcut action refs
   const approveFirstRef = useRef(null);  // wired by ClustersPanel
@@ -31,25 +35,35 @@ export function DashboardPage() {
     }, [activeSession]),
   });
 
-  // Tab view: 'main' | 'analytics' — reset on session change
-  const [view, setView] = useState('main');
-  useEffect(() => { setView('main'); }, [activeSession?.id]);
-
   // Session-scoped event accumulator — survives WS reconnects, resets on session change
   const [sessionEvents, setSessionEvents] = useState([]);
+  const [quotaAlert, setQuotaAlert] = useState(null);
   useEffect(() => { setSessionEvents([]); }, [activeSession?.id]);
+  useEffect(() => { setQuotaAlert(null); }, [activeSession?.id]);
   useEffect(() => {
     if (!wsMessages || wsMessages.length === 0) return;
     const last = wsMessages[wsMessages.length - 1];
-    if (last) setSessionEvents(prev => [...prev.slice(-199), last]);
+    if (!last) return;
+    setSessionEvents(prev => [...prev.slice(-199), last]);
+    if (last.type === 'quota_alert') {
+      setQuotaAlert(prev => (prev === 'critical' ? 'critical' : 'warning'));
+    } else if (last.type === 'quota_exceeded') {
+      setQuotaAlert('critical');
+    }
   }, [wsMessages]);
 
   return (
-    <div>
+    <div className="app-shell">
       <Header connected={connected} reconnecting={reconnecting} activeSession={activeSession} />
-      <main className="app-main">
-        <div className="panels-grid">
-          <div className="left-column">
+      {quotaAlert && (
+        <QuotaBanner
+          level={quotaAlert}
+          onDismiss={() => setQuotaAlert(null)}
+        />
+      )}
+      <div className="app-body">
+        <aside className={`app-sidebar${sidebarCollapsed ? ' collapsed' : ''}`}>
+          <div className="sidebar-content">
             <SessionList
               token={token}
               onSelect={setActiveSession}
@@ -61,54 +75,65 @@ export function DashboardPage() {
               <ManualInput sessionId={activeSession.id} token={token} textareaRef={manualInputRef} />
             )}
             {activeSession && <DocumentUpload sessionId={activeSession.id} token={token} />}
-            <MetricsCards sessionId={activeSession?.id} token={token} wsMessages={wsMessages} />
           </div>
-          <div className="right-column">
-            {activeSession ? (
-              <>
-                <div className="tab-bar">
-                  <button
-                    className={`tab-btn${view === 'main' ? ' active' : ''}`}
-                    onClick={() => setView('main')}
-                  >
-                    Questions &amp; Clusters
-                  </button>
-                  <button
-                    className={`tab-btn${view === 'analytics' ? ' active' : ''}`}
-                    onClick={() => setView('analytics')}
-                  >
-                    Analytics
-                  </button>
-                </div>
+          <button
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(c => !c)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15,18 9,12 15,6" />
+            </svg>
+          </button>
+        </aside>
 
-                {view === 'main' ? (
-                  <>
-                    <QuestionsFeed
-                      sessionId={activeSession.id}
-                      token={token}
-                      wsMessages={wsMessages}
-                    />
-                    <ClustersPanel
-                      sessionId={activeSession.id}
-                      token={token}
-                      wsMessages={wsMessages}
-                      approveFirstRef={approveFirstRef}
-                    />
-                  </>
-                ) : (
-                  <AnalyticsPanel
-                    sessionId={activeSession.id}
-                    token={token}
-                    sessionEvents={sessionEvents}
-                  />
-                )}
-              </>
+        <main className="app-main">
+          {/* Column 1 — Live Feed */}
+          <div className="main-col">
+            {activeSession ? (
+              <QuestionsFeed
+                sessionId={activeSession.id}
+                token={token}
+                wsMessages={wsMessages}
+              />
             ) : (
-              <p className="text-muted">Select or create a session to begin.</p>
+              <div className="empty-state" style={{ padding: '48px 24px' }}>
+                <p className="empty-state-title">LIVE FEED</p>
+                <p className="empty-state-description">Select a session to see incoming questions</p>
+              </div>
             )}
           </div>
-        </div>
-      </main>
+
+          {/* Column 2 — Clusters */}
+          <div className="main-col">
+            {activeSession ? (
+              <ClustersPanel
+                sessionId={activeSession.id}
+                token={token}
+                wsMessages={wsMessages}
+                approveFirstRef={approveFirstRef}
+              />
+            ) : (
+              <div className="empty-state" style={{ padding: '48px 24px' }}>
+                <p className="empty-state-title">CLUSTERS</p>
+                <p className="empty-state-description">Question clusters will appear here</p>
+              </div>
+            )}
+          </div>
+
+          {/* Column 3 — Stats + Analytics */}
+          <div className="main-col col-scrollable">
+            <MetricsCards sessionId={activeSession?.id} token={token} wsMessages={wsMessages} />
+            {activeSession && (
+              <AnalyticsPanel
+                sessionId={activeSession.id}
+                token={token}
+                sessionEvents={sessionEvents}
+              />
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

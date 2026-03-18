@@ -1,8 +1,8 @@
 """End-to-end tests for Phase 2.5 tech debt fixes."""
 
+import os
 import sys
 import time
-import os
 
 import requests
 
@@ -28,6 +28,7 @@ def clear_rate_limits():
     """Clear rate limit keys from Redis to avoid test pollution."""
     try:
         import redis
+
         r = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"))
         deleted = 0
         for key in r.scan_iter("ratelimit:*"):
@@ -78,7 +79,8 @@ try:
     # Check source for fixed_salt
     result = subprocess.run(
         ["grep", "-r", "fixed_salt", os.path.join(os.path.dirname(__file__), "../backend")],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     check(
         "No hardcoded fixed_salt in source",
@@ -88,7 +90,11 @@ try:
 
     # Test roundtrip via direct import
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../backend"))
-    from app.core.encryption import decrypt_data, encrypt_data
+    from app.core.encryption import (
+        decrypt_data,
+        encrypt_data,
+    )
+
     plaintext = "hello world secret"
     encrypted = encrypt_data(plaintext)
     decrypted = decrypt_data(encrypted)
@@ -103,15 +109,14 @@ except Exception as e:
 print("\n=== Test 3: Metrics Endpoint ===")
 
 # Register
-reg = requests.post(f"{BASE_URL}/api/v1/auth/register", json={
-    "email": TEST_EMAIL, "name": "Tech Debt Tester", "password": TEST_PASSWORD
-})
+reg = requests.post(
+    f"{BASE_URL}/api/v1/auth/register",
+    json={"email": TEST_EMAIL, "name": "Tech Debt Tester", "password": TEST_PASSWORD},
+)
 check("Register succeeds", reg.status_code == 201, f"status={reg.status_code}")
 
 # Login
-login = requests.post(f"{BASE_URL}/api/v1/auth/login", json={
-    "email": TEST_EMAIL, "password": TEST_PASSWORD
-})
+login = requests.post(f"{BASE_URL}/api/v1/auth/login", json={"email": TEST_EMAIL, "password": TEST_PASSWORD})
 check("Login succeeds", login.status_code == 200, f"status={login.status_code}")
 token = login.json().get("access_token", "") if login.status_code == 200 else ""
 
@@ -124,10 +129,7 @@ check(
 )
 
 if token:
-    metrics_resp = requests.get(
-        f"{BASE_URL}/api/v1/metrics",
-        headers={"Authorization": f"Bearer {token}"}
-    )
+    metrics_resp = requests.get(f"{BASE_URL}/api/v1/metrics", headers={"Authorization": f"Bearer {token}"})
     check(
         "GET /api/v1/metrics with token → 200",
         metrics_resp.status_code == 200,
@@ -148,32 +150,21 @@ if token:
 print("\n=== Test 4: Token Blacklist ===")
 
 # Fresh login for a clean token
-login2 = requests.post(f"{BASE_URL}/api/v1/auth/login", json={
-    "email": TEST_EMAIL, "password": TEST_PASSWORD
-})
+login2 = requests.post(f"{BASE_URL}/api/v1/auth/login", json={"email": TEST_EMAIL, "password": TEST_PASSWORD})
 check("Second login succeeds", login2.status_code == 200, f"status={login2.status_code}")
 token2 = login2.json().get("access_token", "") if login2.status_code == 200 else ""
 
 if token2:
     # Verify token works pre-logout
-    me_before = requests.get(
-        f"{BASE_URL}/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {token2}"}
-    )
+    me_before = requests.get(f"{BASE_URL}/api/v1/auth/me", headers={"Authorization": f"Bearer {token2}"})
     check("Token valid before logout", me_before.status_code == 200, f"status={me_before.status_code}")
 
     # Logout
-    logout_resp = requests.post(
-        f"{BASE_URL}/api/v1/auth/logout",
-        headers={"Authorization": f"Bearer {token2}"}
-    )
+    logout_resp = requests.post(f"{BASE_URL}/api/v1/auth/logout", headers={"Authorization": f"Bearer {token2}"})
     check("Logout succeeds", logout_resp.status_code == 200, f"status={logout_resp.status_code}")
 
     # Old token should now be rejected
-    me_after = requests.get(
-        f"{BASE_URL}/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {token2}"}
-    )
+    me_after = requests.get(f"{BASE_URL}/api/v1/auth/me", headers={"Authorization": f"Bearer {token2}"})
     check(
         "Old token rejected after logout (401/403)",
         me_after.status_code in (401, 403),

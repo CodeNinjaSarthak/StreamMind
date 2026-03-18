@@ -6,27 +6,22 @@ export function SessionList({ token, onSelect, activeSession, titleInputRef }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Create session form state
   const [title, setTitle] = useState('');
   const [videoId, setVideoId] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
-  // End session state
   const [ending, setEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    fetchSessions();
-  }, []);
+  useEffect(() => { fetchSessions(); }, []);
 
   async function fetchSessions() {
     try {
       setLoading(true);
       const data = await getSessions(token);
       setSessions(data || []);
-      // Auto-select first active session if none selected
       if (!activeSession) {
         const active = (data || []).find(s => s.is_active);
         if (active) onSelect(active);
@@ -83,11 +78,9 @@ export function SessionList({ token, onSelect, activeSession, titleInputRef }) {
             <h3>End session?</h3>
             <p>This will stop YouTube polling and end the session. This cannot be undone.</p>
             <div className="modal-actions">
-              <button className="btn btn-sm" onClick={() => setShowEndConfirm(false)}>
-                Cancel
-              </button>
-              <button className="btn btn-danger btn-sm" onClick={handleEnd} disabled={ending}>
-                {ending ? 'Ending...' : 'End Session'}
+              <button className="btn btn-sm" onClick={() => setShowEndConfirm(false)}>Cancel</button>
+              <button className="btn btn-danger btn-sm" style={{ width: 'auto', marginTop: 0 }} onClick={handleEnd} disabled={ending}>
+                {ending ? 'Ending…' : 'End Session'}
               </button>
             </div>
           </div>
@@ -97,30 +90,35 @@ export function SessionList({ token, onSelect, activeSession, titleInputRef }) {
       {activeSession ? (
         <div>
           <div className="session-info">
-            <strong>{activeSession.title}</strong>
+            <strong style={{ fontSize: 12, fontFamily: 'var(--font-display)', letterSpacing: '0.03em' }}>
+              {activeSession.title}
+            </strong>
             <span className="badge badge-active">Live</span>
           </div>
           {activeSession.youtube_video_id ? (
             <p className="hint">YouTube: {activeSession.youtube_video_id}</p>
           ) : (
-            <p className="hint">Manual mode (no YouTube video)</p>
+            <p className="hint">Manual mode</p>
           )}
-          <button
-            onClick={() => setShowEndConfirm(true)}
-            className="btn btn-danger"
-            disabled={ending}
-          >
-            {ending ? 'Ending...' : 'End Session'}
-          </button>
-          <button onClick={() => onSelect(null)} className="btn" style={{ marginLeft: 8 }}>
-            Switch Session
-          </button>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            <button
+              onClick={() => setShowEndConfirm(true)}
+              className="btn btn-danger-sm"
+              disabled={ending}
+              style={{ flex: 1 }}
+            >
+              {ending ? 'Ending…' : 'End Session'}
+            </button>
+            <button onClick={() => onSelect(null)} className="btn btn-sm" style={{ flex: 1 }}>
+              Switch
+            </button>
+          </div>
         </div>
       ) : (
         <div>
           <form onSubmit={handleCreate}>
             <label>
-              Session Title
+              Title
               <input
                 ref={titleInputRef}
                 type="text"
@@ -131,7 +129,7 @@ export function SessionList({ token, onSelect, activeSession, titleInputRef }) {
               />
             </label>
             <label>
-              YouTube Video ID <span className="hint">(optional)</span>
+              YouTube Video ID <span className="hint" style={{ display: 'inline', marginBottom: 0 }}>(optional)</span>
               <input
                 type="text"
                 value={videoId}
@@ -141,16 +139,16 @@ export function SessionList({ token, onSelect, activeSession, titleInputRef }) {
             </label>
             {createError && <p className="error-msg">{createError}</p>}
             <button type="submit" className="btn btn-primary" disabled={creating}>
-              {creating ? 'Starting...' : 'Start Session'}
+              {creating ? 'Starting…' : 'Start Session'}
             </button>
           </form>
 
           {loading ? (
-            <p style={{ marginTop: 12, color: 'var(--color-muted)', fontSize: 13 }}>Loading sessions...</p>
+            <p className="hint" style={{ marginTop: 10 }}>Loading sessions…</p>
           ) : error ? (
             <p className="error-msg" style={{ marginTop: 8 }}>{error}</p>
           ) : sessions.length > 0 ? (
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: 14 }}>
               <select
                 className="session-filter"
                 value={filter}
@@ -161,25 +159,33 @@ export function SessionList({ token, onSelect, activeSession, titleInputRef }) {
                 <option value="ended">Ended Only</option>
               </select>
               {(() => {
-                const displayedSessions = sessions.filter(s => {
+                const displayed = sessions.filter(s => {
                   if (filter === 'active') return s.is_active;
                   if (filter === 'ended') return !s.is_active;
                   return true;
                 });
-                return displayedSessions.length > 0 ? displayedSessions.map(s => (
+                return displayed.length > 0 ? displayed.map(s => (
                   <div
                     key={s.id}
                     onClick={() => onSelect(s)}
                     style={{
-                      padding: '6px 8px',
-                      fontSize: 12,
+                      padding: '6px 0',
+                      fontSize: 11,
                       color: 'var(--color-muted)',
                       borderBottom: '1px solid var(--color-border)',
                       cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'color 0.12s',
                     }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--color-text)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
                   >
-                    {s.title}
-                    {s.is_active && <span className="badge badge-active" style={{ marginLeft: 6 }}>Live</span>}
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.title}
+                    </span>
+                    {s.is_active && <span className="badge badge-active">Live</span>}
                   </div>
                 )) : (
                   <p className="hint" style={{ marginTop: 8 }}>No sessions match this filter.</p>
@@ -190,7 +196,7 @@ export function SessionList({ token, onSelect, activeSession, titleInputRef }) {
             <div className="empty-state" style={{ padding: '16px 0' }}>
               <span className="empty-icon">🎓</span>
               <p>No sessions yet</p>
-              <p className="empty-hint">Create your first session to start managing questions</p>
+              <p className="empty-hint">Create your first session above</p>
             </div>
           ) : null}
         </div>

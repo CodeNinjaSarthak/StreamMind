@@ -1,7 +1,9 @@
 """WebSocket connection manager."""
 
 import asyncio
+import json
 import logging
+import uuid
 from datetime import (
     datetime,
     timezone,
@@ -12,6 +14,7 @@ from typing import (
     Optional,
 )
 
+import redis.asyncio as aioredis
 from app.core.config import settings
 from fastapi import (
     WebSocket,
@@ -45,6 +48,7 @@ class WebSocketManager:
         """Initialize WebSocket manager."""
         self.active_connections: Dict[str, Dict[str, ConnectionInfo]] = {}
         self.heartbeat_task: Optional[asyncio.Task] = None
+        self._redis: Optional[aioredis.Redis] = None
 
     async def connect(self, session_id: str, websocket: WebSocket, connection_id: Optional[str] = None) -> str:
         """Connect a WebSocket to a session.
@@ -60,8 +64,6 @@ class WebSocketManager:
         await websocket.accept()
 
         if connection_id is None:
-            import uuid
-
             connection_id = str(uuid.uuid4())
 
         if session_id not in self.active_connections:
@@ -98,6 +100,52 @@ class WebSocketManager:
 
             if not self.active_connections[session_id]:
                 del self.active_connections[session_id]
+
+    async def publish(self, session_id: str, message: Dict[str, Any]) -> None:
+        """Publish a message to Redis channel ws:{session_id}.
+
+        Any subscriber process that owns a connection for this session
+        will pick it up and deliver it locally.
+        """
+        try:
+            if self._redis is None:
+                self._redis = aioredis.from_url(settings.redis_url, decode_responses=True)
+            await self._redis.publish(f"ws:{session_id}", json.dumps(message))
+        except Exception as e:
+            logger.error(f"Redis publish failed, resetting connection: {e}")
+            self._redis = None
+            raise
+
+    async def start_subscriber(self) -> None:
+        """Subscribe to ws:* and deliver messages to locally held connections.
+
+        Reconnects with exponential backoff on Redis failure.
+        """
+        backoff = 1
+        while True:
+            r = None
+            try:
+                r = aioredis.from_url(settings.redis_url, decode_responses=True)
+                pubsub = r.pubsub()
+                await pubsub.psubscribe("ws:*")
+                backoff = 1
+                async for message in pubsub.listen():
+                    if message["type"] != "pmessage":
+                        continue
+                    channel: str = message["channel"]  # "ws:{session_id}"
+                    session_id = channel[3:]  # strip "ws:" prefix
+                    try:
+                        event = json.loads(message["data"])
+                        await self.broadcast_to_session(session_id, event)
+                    except Exception as e:
+                        logger.error(f"Failed to deliver WS event for session {session_id}: {e}")
+            except Exception as e:
+                logger.error(f"WS subscriber error, reconnecting in {backoff}s: {e}")
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 30)
+            finally:
+                if r:
+                    await r.aclose()
 
     async def send_personal_message(self, session_id: str, connection_id: str, message: Dict[str, Any]) -> bool:
         """Send a message to a specific WebSocket.
