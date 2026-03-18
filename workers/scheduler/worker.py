@@ -76,10 +76,12 @@ def main() -> None:
 
     logger.info("Scheduler starting — jobs registered:")
     for job in scheduler.get_jobs():
-        logger.info(f"  [{job.id}] {job.name} — next run: {job.next_run_time}")
+        logger.info(f"  [{job.id}] {job.name}")
 
     try:
         scheduler.start()
+        for job in scheduler.get_jobs():
+            logger.info(f"  [{job.id}] scheduled — next run: {job.next_run_time}")
     except KeyboardInterrupt:
         logger.info("Scheduler shutting down gracefully")
         scheduler.shutdown()

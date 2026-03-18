@@ -15,6 +15,18 @@ export function AuthProvider({ children }) {
   const [userName, setUserName] = useState(() => localStorage.getItem('userName') || '');
   const [isLoading, setIsLoading] = useState(true);
 
+  const logout = useCallback(async () => {
+    const currentToken = localStorage.getItem('token');
+    try { await apiLogout(currentToken); } catch (_) {}
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    setToken(null);
+    setUserEmail('');
+    setUserName('');
+  }, []);
+
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     if (!storedToken) {
@@ -65,18 +77,6 @@ export function AuthProvider({ children }) {
     setUserName(user.name || name);
     await login(email, password);
   }
-
-  const logout = useCallback(async () => {
-    const currentToken = localStorage.getItem('token');
-    try { await apiLogout(currentToken); } catch (_) {}
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userName');
-    setToken(null);
-    setUserEmail('');
-    setUserName('');
-  }, []);
 
   async function updateProfile(name) {
     const updated = await apiUpdateProfile({ name }, token);

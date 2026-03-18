@@ -24,10 +24,16 @@ export function YouTubePanel({ token }) {
   async function fetchStatus() {
     try {
       setLoading(true);
+      setError(null);
       const status = await getYouTubeStatus(token);
+      if (!status) {
+        // 401 silently returned undefined — show disconnected, not an error
+        setYtStatus({ connected: false });
+        return;
+      }
       setYtStatus(status);
     } catch (e) {
-      setError(e.message);
+      setError(e.message || 'Connection error');
     } finally {
       setLoading(false);
     }

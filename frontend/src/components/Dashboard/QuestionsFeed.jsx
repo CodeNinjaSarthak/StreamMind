@@ -26,7 +26,7 @@ export function QuestionsFeed({ sessionId, token, wsMessages }) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Initial fetch — reset everything on session/token change
+  // Initial fetch — reset everything on session change
   useEffect(() => {
     let stale = false;
     setOffset(0);
@@ -37,9 +37,9 @@ export function QuestionsFeed({ sessionId, token, wsMessages }) {
       setError(null);
       try {
         const data = await getSessionComments(sessionId, token, PAGE_SIZE, 0);
-        if (!stale) {
-          setComments(data || []);
-          setHasMore((data || []).length === PAGE_SIZE);
+        if (!stale && data) {
+          setComments(data);
+          setHasMore(data.length === PAGE_SIZE);
         }
       } catch (e) {
         if (!stale) setError(e.message);
@@ -51,14 +51,32 @@ export function QuestionsFeed({ sessionId, token, wsMessages }) {
     return () => { stale = true; };
   }, [sessionId, token]);
 
-  // Process WebSocket messages
+  // Re-fetch when token refreshes while initial load is still pending
   useEffect(() => {
+    if (!sessionId || !token || !isLoadingInitial) return;
+    let stale = false;
+    getSessionComments(sessionId, token, PAGE_SIZE, 0).then(data => {
+      if (!stale && data) {
+        setComments(data);
+        setHasMore(data.length === PAGE_SIZE);
+        setIsLoadingInitial(false);
+      }
+    });
+    return () => { stale = true; };
+  }, [token]);
+
+  // Process WebSocket messages — skip until initial fetch is done
+  useEffect(() => {
+    if (isLoadingInitial) return;
     if (!wsMessages || wsMessages.length === 0) return;
     const last = wsMessages[wsMessages.length - 1];
     if (!last) return;
 
     if (last.type === 'comment_created') {
-      setComments(prev => [last.data || last, ...prev]);
+      setComments(prev => {
+        if (prev.some(c => c.id === (last.data?.id ?? last.id))) return prev;
+        return [last.data || last, ...prev];
+      });
       // do NOT touch offset
     } else if (last.type === 'comment_classified') {
       const { comment_id, is_question } = last.data || last;
@@ -66,7 +84,7 @@ export function QuestionsFeed({ sessionId, token, wsMessages }) {
         prev.map(c => c.id === comment_id ? { ...c, is_question } : c)
       );
     }
-  }, [wsMessages]);
+  }, [wsMessages, isLoadingInitial]);
 
   async function loadMore() {
     if (loadingMore) return;
