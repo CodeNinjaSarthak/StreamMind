@@ -2,6 +2,8 @@
 
 > Purpose: Build steps, load unpacked, dev vs prod backend URL configuration.
 
+> **Status:** The extension is fully working and can be loaded unpacked for development and testing. It is not yet published to the Chrome Web Store.
+
 <!-- Populate from: chrome-extension/package.json, README (if exists) -->
 
 ## Build

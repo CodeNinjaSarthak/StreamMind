@@ -7,7 +7,7 @@
 ## Prerequisites
 
 - Docker + Docker Compose
-- Python 3.11+
+- Python 3.13+
 - Node.js 20+
 - Redis (or via Docker)
 - PostgreSQL (or via Docker)
@@ -17,7 +17,7 @@
 ```yaml
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg15
     ports: ["5432:5432"]
     volumes: [postgres_data:/var/lib/postgresql/data]
 
@@ -42,14 +42,8 @@ DATABASE_URL=postgresql://user:password@localhost:5432/ai_doubt_manager_dev alem
 cd backend
 uvicorn app.main:app --reload --port 8000
 
-# Start workers (each in a separate terminal)
-cd workers && python runner.py classification
-cd workers && python runner.py embeddings
-cd workers && python runner.py clustering
-cd workers && python runner.py answer_generation
-cd workers && python runner.py youtube_polling
-cd workers && python runner.py youtube_posting
-cd workers && python runner.py trigger_monitor
+# Start ALL services (backend + 6 workers + scheduler + frontend) via tmux
+./start_dev.sh
 
 # Start frontend
 cd frontend
@@ -69,15 +63,17 @@ npm run dev   # → http://localhost:5173
 
 ## Makefile Commands
 
-<!-- Populate from Makefile -->
-
 ```bash
-make up          # Start all Docker services
-make down        # Stop all Docker services
-make migrate     # Run Alembic migrations
-make test        # Run test suite
-make lint        # Run linters
-# Add more as defined
+make run-backend   # uvicorn app.main:app --reload on :8000
+make format        # Black + isort (line-length=119)
+make lint          # Ruff + flake8 + pylint
+make test          # pytest backend/tests workers -v
+make test-coverage # Coverage report to HTML + terminal
+make migrate       # alembic upgrade head
+make migration MSG="..." # alembic revision --autogenerate
+make downgrade     # alembic downgrade -1
+make install       # pip install requirements for backend + workers
+make clean         # Remove __pycache__, .pyc, .egg-info, .pytest_cache
 ```
 
 ## Environment Files

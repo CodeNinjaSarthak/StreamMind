@@ -97,10 +97,10 @@ Complete listing of every file in this docs repository:
 **Workers**
 - [workers/overview.md](workers/overview.md) — QueueManager, retry, DLQ, runner.py
 - [workers/classification.md](workers/classification.md) — ClassificationPayload → is_question
-- [workers/embeddings.md](workers/embeddings.md) — EmbeddingPayload → 1536-dim pgvector
-- [workers/clustering.md](workers/clustering.md) — Cosine similarity at 0.8 → Cluster CRUD
+- [workers/embeddings.md](workers/embeddings.md) — EmbeddingPayload → 768-dim pgvector
+- [workers/clustering.md](workers/clustering.md) — Cosine similarity at 0.65 → Cluster CRUD
 - [workers/answer-generation.md](workers/answer-generation.md) — RAG + LLM → Answer record
-- [workers/trigger-monitor.md](workers/trigger-monitor.md) — Count/interval thresholds → clustering dispatch
+- [workers/trigger-monitor.md](workers/trigger-monitor.md) — **Stub** (not implemented, not started by start_dev.sh)
 - [workers/youtube-polling.md](workers/youtube-polling.md) — ThreadPoolExecutor, chat_id cache, dedup
 - [workers/youtube-posting.md](workers/youtube-posting.md) — YouTubePostingPayload → YouTube API
 
@@ -132,7 +132,7 @@ Complete listing of every file in this docs repository:
 - [infra/configuration-reference.md](infra/configuration-reference.md) — Master table of ALL env vars
 
 **Observability**
-- [observability/metrics.md](observability/metrics.md) — All 6 Prometheus metrics with labels + PromQL
+- [observability/metrics.md](observability/metrics.md) — All Prometheus metrics with labels + PromQL
 - [observability/logging.md](observability/logging.md) — Log levels, JSON format, RequestContextMiddleware
 - [observability/dashboards.md](observability/dashboards.md) — 4 Grafana dashboards: panels, import
 - [observability/alerting.md](observability/alerting.md) — prometheus/rules.yml, thresholds, incident checklist

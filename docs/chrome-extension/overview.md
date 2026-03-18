@@ -2,6 +2,8 @@
 
 > Purpose: Manifest V3 permissions, background Service Worker lifecycle, alarms keep-alive, and content script.
 
+> **Status:** Fully functional. Not yet published to the Chrome Web Store — currently in testing via "Load unpacked" in developer mode.
+
 <!-- Populate from: chrome-extension/ directory (verify path) -->
 
 ## Stack

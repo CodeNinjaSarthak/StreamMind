@@ -43,14 +43,21 @@
 ### POST /api/v1/auth/login
 **Auth:** Public
 
-**Request:** `application/x-www-form-urlencoded` — `username`, `password`
+**Request:**
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
 
 **Response 200:**
 ```json
 {
   "access_token": "string",
   "refresh_token": "string",
-  "token_type": "bearer"
+  "token_type": "bearer",
+  "expires_in": 1800
 }
 ```
 
@@ -60,6 +67,42 @@
 **Auth:** Bearer refresh_token
 
 **Response 200:** Same as login response
+
+---
+
+### GET /api/v1/auth/me
+**Auth:** Required
+
+**Response 200:** `TeacherResponse`
+
+---
+
+### PATCH /api/v1/auth/profile
+**Auth:** Required
+
+**Request:**
+```json
+{
+  "name": "string"
+}
+```
+
+**Response 200:** `TeacherResponse`
+
+---
+
+### POST /api/v1/auth/change-password
+**Auth:** Required
+
+**Request:**
+```json
+{
+  "current_password": "string",
+  "new_password": "string"
+}
+```
+
+**Response 200:** `{"message": "Password changed successfully"}`
 
 ---
 
@@ -112,9 +155,56 @@
 
 ---
 
+### PATCH /api/v1/sessions/{session_id}
+**Auth:** Required (must own session)
+
+**Request:**
+```json
+{
+  "title": "string | null",
+  "description": "string | null"
+}
+```
+
+**Response 200:** `SessionResponse`
+
+---
+
+### POST /api/v1/sessions/{session_id}/end
+**Auth:** Required (must own session)
+
+**Response 200:** `SessionResponse`
+
+---
+
+### GET /api/v1/sessions/{session_id}/clusters
+**Auth:** Required (must own session)
+
+**Response 200:** `[ClusterResponse]` (includes nested answers)
+
+---
+
+### GET /api/v1/sessions/{session_id}/analytics
+**Auth:** Required (must own session)
+
+**Response 200:**
+```json
+{
+  "total_questions": 0,
+  "total_clusters": 0,
+  "response_rate": 0.0,
+  "avg_cluster_size": 0.0,
+  "peak_hour": "string | null",
+  "questions_over_time": [{"hour": "ISO 8601", "count": 0}],
+  "top_clusters": [{"title": "string", "comment_count": 0}]
+}
+```
+
+---
+
 ## Dashboard Endpoints (`/api/v1/dashboard`)
 
-### POST /api/v1/dashboard/sessions/{session_id}/question
+### POST /api/v1/dashboard/sessions/{session_id}/manual-question
 **Auth:** Required (must own session)
 
 Submit a manual question bypassing YouTube polling.
@@ -139,7 +229,7 @@ Submit a manual question bypassing YouTube polling.
 
 ---
 
-### PUT /api/v1/dashboard/answers/{answer_id}/edit
+### PATCH /api/v1/dashboard/answers/{answer_id}
 **Auth:** Required
 
 **Request:**
@@ -160,10 +250,25 @@ Submit a manual question bypassing YouTube polling.
 ```json
 {
   "total_comments": 0,
-  "total_questions": 0,
-  "total_clusters": 0,
-  "total_answers": 0,
-  "posted_answers": 0
+  "questions": 0,
+  "answered": 0,
+  "clusters": 0,
+  "answers_generated": 0,
+  "answers_posted": 0
+}
+```
+
+---
+
+### GET /api/v1/dashboard/clusters/{cluster_id}/representative
+**Auth:** Required (must own cluster's session)
+
+**Response 200:**
+```json
+{
+  "comment_id": "uuid",
+  "text": "string",
+  "similarity": 0.95
 }
 ```
 
@@ -194,17 +299,191 @@ Returns HTML that postMessages to opener window.
 ---
 
 ### POST /api/v1/youtube/auth/refresh
-### GET /api/v1/youtube/auth/status
-### DELETE /api/v1/youtube/auth/disconnect
-### GET /api/v1/youtube/videos/{video_id}/validate
+**Auth:** Required
 
-<!-- Populate each with request/response shapes -->
+Refreshes the YouTube access token using stored refresh token.
+
+**Response 200:** `{"status": "refreshed"}`
 
 ---
 
-## Document Endpoints (`/api/v1/documents`)
+### GET /api/v1/youtube/auth/status
+**Auth:** Required
 
-<!-- Populate: upload, list, delete -->
+**Response 200:**
+```json
+{
+  "connected": true,
+  "expires_at": "ISO 8601 | null"
+}
+```
+
+---
+
+### DELETE /api/v1/youtube/auth/disconnect
+**Auth:** Required
+
+**Response 204:** No content
+
+---
+
+### GET /api/v1/youtube/videos/{video_id}/validate
+**Auth:** Required
+
+**Response 200:**
+```json
+{
+  "valid": true,
+  "is_live": true,
+  "title": "string"
+}
+```
+
+---
+
+## RAG Document Endpoints (`/api/v1/rag`)
+
+### POST /api/v1/rag/documents
+**Auth:** Required
+
+Upload a PDF, DOCX, or TXT file for RAG retrieval. Multipart form data.
+
+**Response 200:**
+```json
+{
+  "chunks_created": 5,
+  "document_ids": ["uuid", "..."]
+}
+```
+
+---
+
+### GET /api/v1/rag/documents
+**Auth:** Required
+
+**Response 200:** `[{"id": "uuid", "title": "string", "source_type": "string", "created_at": "ISO 8601"}]`
+
+---
+
+### DELETE /api/v1/rag/documents/{doc_id}
+**Auth:** Required (must own document)
+
+**Response 204:** No content
+
+---
+
+## Comment Endpoints (`/api/v1/comments`)
+
+### GET /api/v1/comments/{comment_id}
+**Auth:** Required (must own comment's session)
+
+**Response 200:** `CommentResponse`
+
+---
+
+### PATCH /api/v1/comments/{comment_id}
+**Auth:** Required (must own comment's session)
+
+Marks the comment as answered (`is_answered=True`).
+
+**Response 200:** `CommentResponse`
+
+---
+
+## Cluster Endpoints (`/api/v1/clusters`)
+
+### GET /api/v1/clusters/{cluster_id}
+**Auth:** Required (must own cluster's session)
+
+**Response 200:** `ClusterResponse`
+
+---
+
+### GET /api/v1/clusters/{cluster_id}/comments
+**Auth:** Required (must own cluster's session)
+
+**Query params:** `limit` (default: 50)
+
+**Response 200:** `[CommentResponse]`
+
+---
+
+### PATCH /api/v1/clusters/{cluster_id}
+**Auth:** Required (must own cluster's session)
+
+**Request:**
+```json
+{
+  "title": "string | null",
+  "description": "string | null"
+}
+```
+
+**Response 200:** `ClusterResponse`
+
+---
+
+## Answer Endpoints (`/api/v1/answers`)
+
+### POST /api/v1/answers
+**Auth:** Required
+
+**Request:**
+```json
+{
+  "cluster_id": "uuid",
+  "comment_id": "uuid | null",
+  "text": "string"
+}
+```
+
+**Response 201:** `AnswerResponse`
+
+---
+
+### GET /api/v1/answers/{answer_id}
+**Auth:** Required (must own answer's session)
+
+**Response 200:** `AnswerResponse`
+
+---
+
+### PATCH /api/v1/answers/{answer_id}
+**Auth:** Required
+
+**Request:**
+```json
+{
+  "text": "string"
+}
+```
+
+**Response 200:** `AnswerResponse`
+
+---
+
+### POST /api/v1/answers/{answer_id}/post
+**Auth:** Required
+
+Marks answer as posted (`is_posted=True`, `posted_at=now`).
+
+**Response 200:** `AnswerResponse`
+
+---
+
+## Metrics Endpoint (`/api/v1/metrics`)
+
+### GET /api/v1/metrics
+**Auth:** Required
+
+**Response 200:**
+```json
+{
+  "active_sessions": 0,
+  "questions_processed": 0,
+  "answers_generated": 0
+}
+```
 
 ---
 

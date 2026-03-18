@@ -56,7 +56,25 @@ See [state/runbooks/worker-crash.md](../state/runbooks/worker-crash.md) for DLQ 
 
 ## runner.py
 
-<!-- How to start workers; environment setup; which workers must run simultaneously -->
+> **Stub**: `workers/runner.py` is not implemented. `make run-workers` calls it but
+> it does nothing useful. Use `./start_dev.sh` instead, which launches all workers
+> via tmux.
+
+### start_dev.sh Workers
+
+`./start_dev.sh` starts 9 processes in a tmux session:
+
+| Pane | Process |
+|------|---------|
+| 0 | Backend (uvicorn) |
+| 1 | Classification worker |
+| 2 | Embeddings worker |
+| 3 | Clustering worker |
+| 4 | Answer generation worker |
+| 5 | YouTube polling worker |
+| 6 | YouTube posting worker |
+| 7 | Scheduler (APScheduler — quota reset + token cleanup) |
+| 8 | Frontend (Vite dev server) |
 
 ## Priority
 

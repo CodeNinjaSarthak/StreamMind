@@ -64,10 +64,12 @@ The dashboard listens for this message to update YouTube connection status.
 ## Token Storage
 
 YouTube access and refresh tokens are:
-1. Encrypted via `encrypt_data` (`backend/app/core/encryption.py`)
-2. Stored in `StreamingSession.youtube_access_token` / `youtube_refresh_token`
+1. Encrypted via `encrypt_data` (`backend/app/core/encryption.py`) using Fernet symmetric encryption
+2. Stored in the `YouTubeToken` model (one per teacher, `teacher_id` UNIQUE constraint)
+3. Fields: `access_token`, `refresh_token`, `token_type`, `scope`, `expires_at`
 
 See [security/secrets-management.md](secrets-management.md) for encryption details.
+See [data/schema.md](../data/schema.md) for the YouTubeToken model definition.
 
 ## HTTPS Requirement
 

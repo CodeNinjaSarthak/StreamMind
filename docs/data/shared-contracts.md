@@ -30,7 +30,7 @@ any TypeScript consumers.
 |--------|---------|
 | `ClassificationPayload` | classification worker (producer: polling), |
 | `EmbeddingPayload` | embeddings worker |
-| `ClusteringPayload` | clustering worker, trigger-monitor |
+| `ClusteringPayload` | clustering worker |
 | `AnswerGenerationPayload` | answer_generation worker |
 | `YouTubePostingPayload` | youtube_posting worker |
 

@@ -69,9 +69,9 @@ Comments (M) ──▶ (1) Clusters  [SET NULL on cluster delete]
 
 | Model | Column | Dimensions | Index | Purpose |
 |-------|--------|-----------|-------|---------|
-| `comments` | `embedding` | Vector(768) | None (sequential scan) | Semantic similarity for clustering |
-| `clusters` | `centroid_embedding` | Vector(768) | None (sequential scan) | Running centroid for nearest-centroid matching |
-| `rag_documents` | `embedding` | Vector(768) | None (sequential scan) | Cosine distance retrieval for answer grounding |
+| `comments` | `embedding` | Vector(768) | HNSW (cosine_ops, m=16, ef=64) | Semantic similarity for clustering |
+| `clusters` | `centroid_embedding` | Vector(768) | HNSW (cosine_ops, m=16, ef=64) | Running centroid for nearest-centroid matching |
+| `rag_documents` | `embedding` | Vector(768) | HNSW (cosine_ops, m=16, ef=64) | Cosine distance retrieval for answer grounding |
 
 **Why 768 dimensions (not Gemini's native 3072)**: 768 is the balance point — reduces storage and index cost by ~75% while retaining sufficient semantic fidelity for question clustering (not fine-grained retrieval). The code explicitly normalizes embeddings post-generation because Google requires normalization for non-3072 dimensions.
 
@@ -333,11 +333,11 @@ Pub/sub delivers only to currently connected subscribers. API restart = lost eve
 
 **Mitigation**: Replace pub/sub with Redis Streams (`XADD`/`XREAD` with consumer groups). Streams persist messages and support "read from last acknowledged" semantics.
 
-### 7.3 No pgvector Index on Vector Columns — **SEVERITY: MEDIUM (time-bomb)**
+### 7.3 pgvector HNSW Index Tuning — **SEVERITY: LOW (resolved)**
 
-Clustering worker's `ORDER BY centroid_embedding <=> :emb` performs sequential scan. Fine at O(100) clusters. Becomes a latency cliff at O(10,000+).
+HNSW indexes have been added to all three vector columns (`comments.embedding`, `clusters.centroid_embedding`, `rag_documents.embedding`) using `vector_cosine_ops` with tuning parameters `m=16, ef_construction=64`. This resolves the original sequential scan concern.
 
-**Mitigation**: Add HNSW index on `clusters.centroid_embedding` and `rag_documents.embedding`. Migration files exist for HNSW indexes but may not cover all vector columns.
+**Remaining risk**: At very high scale (O(100K+) vectors per table), HNSW `ef_search` may need tuning for query latency. Monitor clustering worker query times.
 
 ### 7.4 YouTube Quota Exhaustion — **SEVERITY: MEDIUM**
 
@@ -445,7 +445,7 @@ Workers (100 connections) → PgBouncer (20 connections) → PostgreSQL
 | Embeddings | Local model fallback (e.g., `all-MiniLM-L6-v2`) | Gemini cost > $100/day |
 | YouTube quota | Quota tiering (premium teachers get 50K/day) | Teachers hitting limits daily |
 | Worker autoscaling | Scale on queue depth (>100 tasks → spawn pod) | Sustained backlog |
-| pgvector | Add HNSW index on vector columns | >10K clusters per session |
+| pgvector | Tune HNSW `ef_search` parameter | >100K vectors per table |
 | Redis | Redis Cluster (sharding) | >1GB memory or >50K ops/sec |
 | API | Multiple uvicorn instances behind load balancer | >500 concurrent WebSocket connections |
 

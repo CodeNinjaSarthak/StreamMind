@@ -11,7 +11,8 @@
 ```json
 {
   "cluster_id": "uuid",
-  "session_id": "uuid"
+  "session_id": "uuid",
+  "question_texts": ["string", "..."]
 }
 ```
 
@@ -27,7 +28,10 @@
 
 ## RAG Retrieval
 
-<!-- How many chunks retrieved? What similarity threshold? What prompt template? -->
+- Retrieves top 5 nearest RAG documents by centroid embedding (cosine distance)
+- Documents are scoped to the teacher who owns the session (teacher_id filter)
+- Two-prompt system: with-context prompt when documents exist, without-context when none available
+- Answer is moderated via ModerationService before saving
 
 ## Answer Record
 
@@ -36,7 +40,7 @@
 | `Answer.cluster_id` | FK to cluster |
 | `Answer.text` | Generated answer text |
 | `Answer.is_posted` | `False` (pending approval) |
-| `Answer.is_approved` | `False` (pending teacher action) |
+| `Answer.posted_at` | `null` (set when posted) |
 
 For field definitions see [data/schema.md](../data/schema.md).
 
@@ -44,7 +48,7 @@ For field definitions see [data/schema.md](../data/schema.md).
 
 After this worker creates the `Answer` record:
 1. WebSocket event notifies the teacher dashboard
-2. Teacher reviews, optionally edits, then approves via `POST /api/v1/dashboard/approve/{answer_id}`
+2. Teacher reviews, optionally edits, then approves via `POST /api/v1/dashboard/answers/{answer_id}/approve`
 3. youtube_posting worker posts the approved answer
 
 See [ADR-004](../architecture/decisions/ADR-004-rag-design.md) for the rationale.

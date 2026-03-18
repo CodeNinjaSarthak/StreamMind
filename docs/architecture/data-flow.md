@@ -23,13 +23,13 @@ QUEUE_EMBEDDING
         │
         ▼ (5) Embed
 [embeddings worker]
-        │ 1536-dim vector → pgvector
+        │ 768-dim vector → pgvector
         ▼ (6) Enqueue
 QUEUE_CLUSTERING
         │
         ▼ (7) Cluster
 [clustering worker]
-        │ cosine similarity ≥ 0.8 → assign to cluster
+        │ cosine similarity ≥ 0.65 → assign to cluster
         ▼ (8) Enqueue
 QUEUE_ANSWER_GENERATION
         │
@@ -61,10 +61,10 @@ QUEUE_ANSWER_GENERATION
 <!-- Only is_question=True comments proceed to embedding. Threshold configurable. -->
 
 ### Step 5 — Embed
-<!-- Gemini embedding API, 1536-dim, stored as pgvector. See workers/embeddings.md -->
+<!-- Gemini embedding API, 768-dim, stored as pgvector. See workers/embeddings.md -->
 
 ### Step 6–7 — Cluster
-<!-- Cosine similarity at threshold 0.8, centroid update, Cluster CRUD. See workers/clustering.md -->
+<!-- Cosine similarity at threshold 0.65, centroid update, Cluster CRUD. See workers/clustering.md -->
 
 ### Step 8–9a — Generate Answer
 <!-- RAG retrieval from document store, LLM call with context. See workers/answer-generation.md -->

@@ -12,12 +12,15 @@
 
 ```js
 const {
-  user,           // { id, email, name } | null
   token,          // string | null — JWT access token
-  isLoading,      // bool — true during initial auth check
+  displayName,    // string | null — user's display name
+  userEmail,      // string | null
+  userName,       // string | null
+  isAuthenticated,// bool
   login,          // async (email, password) → void (throws on error)
   logout,         // async () → void
-  refreshToken,   // async () → string — new access token
+  register,       // async (email, password, name) → void
+  updateProfile,  // async (name) → void
 } = useAuth()
 ```
 
@@ -35,21 +38,23 @@ Must be used inside `<AuthProvider>`. Throws if called outside context.
 
 ```js
 const {
-  messages,       // array — last 100 events (capped)
-  isConnected,    // bool
-  lastEvent,      // most recent event object | null
+  messages,       // array — last 100 events (capped, oldest dropped)
+  connected,      // bool
+  reconnecting,   // bool — true during reconnection attempts
 } = useWebSocket(sessionId, token)
 ```
 
 ### Behavior
 
 - **Reconnection:** Exponential backoff on disconnect
-  - Initial delay: <!-- populate -->
-  - Max delay: <!-- populate -->
-  - Gives up after: <!-- populate attempts, or indefinite? -->
+  - Initial delay: 1000ms
+  - Max delay: 30000ms (capped)
+  - Formula: `Math.min(1000 * 2^retry_count, 30000)`
+  - Gives up after: 10 retries (MAX_RETRIES=10)
+  - Auth failures (4001, 4003) do NOT retry
 - **Message cap:** Caps at 100 messages (oldest dropped on overflow)
   - Prevents memory growth during long sessions
-- **Auth:** Passes `?token={token}` in WebSocket URL
+- **Auth:** Sends `{"type": "auth", "token": "<jwt>"}` as first message after connection opens
 - **Cleanup:** Closes connection on component unmount or sessionId change
 
 ### Event Handling
@@ -61,17 +66,36 @@ to `lastEvent` or filter `messages` by `type`.
 
 ## useToast
 
-`frontend/src/hooks/useToast.js` (verify path)
+`frontend/src/hooks/useToast.js`
 
-<!-- Populate: toast API contract -->
+### Contract
+
+```js
+import { showToast } from '../hooks/useToast'
+
+showToast('Operation succeeded', 'success')  // types: 'info' | 'error' | 'success'
+```
+
+Global function — can be called from anywhere (no Provider needed). `ToastContainer` subscribes on mount. Auto-dismisses after 4000ms.
 
 ---
 
 ## useKeyboardShortcuts
 
-`frontend/src/hooks/useKeyboardShortcuts.js` (verify path)
+`frontend/src/hooks/useKeyboardShortcuts.js`
 
-<!-- Populate: keyboard shortcut bindings -->
+### Contract
+
+```js
+useKeyboardShortcuts({
+  onNewSession,   // called on 'N' key
+  onApproveFirst, // called on 'A' key
+  onFocusSearch,  // called on Ctrl+K / Cmd+K
+  enabled: true,  // disable when modal open, etc.
+})
+```
+
+Ignores shortcuts when active element is INPUT, TEXTAREA, SELECT, or contentEditable. `Ctrl+K` / `Cmd+K` works even while typing (preventDefault).
 
 ---
 
@@ -79,7 +103,8 @@ to `lastEvent` or filter `messages` by `type`.
 
 `frontend/src/context/AuthContext.jsx`
 
-Manages token storage and auto-refresh. Token is stored in:
-<!-- localStorage key? sessionStorage? -->
+Manages token storage and auto-refresh.
 
-Auto-refresh: <!-- on 401 response? on timer? -->
+- **Storage:** `localStorage` keys: `token`, `refreshToken`
+- **Auto-refresh:** On mount, checks stored token expiry (JWT decode). If expired, attempts refresh using stored refresh token. If refresh fails, logs out and redirects to `/login`.
+- **Cross-tab:** ThemeContext (separate) syncs dark/light mode across tabs via `storage` events.

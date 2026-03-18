@@ -1,7 +1,7 @@
 # Known Issues
 
 > **LIVING DOCUMENT** — Update when bugs are found or resolved.
-> Last updated: 2026-03-01
+> Last updated: 2026-03-18
 
 ## Active Bugs
 
@@ -15,7 +15,7 @@
 
 | ID | Area | Description | Impact |
 |----|------|-------------|--------|
-| TD-001 | Frontend | ActivityLog and AnalyticsPanel components are stubs with unclear purpose | Low — dashboard renders without them |
+| TD-001 | Frontend | ~~ActivityLog and AnalyticsPanel stubs~~ **Resolved** — both are fully implemented | — |
 | TD-002 | Workers | No built-in monitoring UI for queue depths or DLQ contents | Medium — must use redis-cli to inspect |
 | TD-003 | Migrations | Some migrations written manually (no Docker in dev environment) | Low — documented in data/migrations.md |
 | TD-004 | Tests | <!-- Coverage of workers/youtube integration --> | <!-- impact --> |

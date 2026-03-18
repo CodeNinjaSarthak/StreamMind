@@ -37,11 +37,12 @@ Enable via `LOG_JSON=true` env var (recommended in production).
 
 ## RequestContextMiddleware
 
-`backend/app/middleware/` (verify path)
+`backend/app/core/middleware.py`
 
 - Assigns a unique `request_id` (UUID) to each incoming HTTP request
 - Injects `request_id` into log context for the duration of the request
 - Returns `X-Request-ID` response header
+- Returns `X-Process-Time` response header (request duration)
 - Workers inherit a `task_id` for equivalent correlation
 
 ## Worker Logging

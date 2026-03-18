@@ -10,9 +10,10 @@
 
 | Method | Purpose | Used by |
 |--------|---------|---------|
-| `classify_comment()` | Returns `is_question`, `confidence_score` | classification worker |
-| `generate_embedding()` | Returns 1536-dim vector | embeddings worker |
+| `classify_question()` | Returns `is_question`, `confidence_score` | classification worker |
+| `generate_embedding()` | Returns 768-dim vector | embeddings worker |
 | `generate_answer()` | Returns answer text given context | answer_generation worker |
+| `summarize_cluster()` | Returns cluster title summary | clustering worker (at count=3) |
 
 ## RAG Document Service
 

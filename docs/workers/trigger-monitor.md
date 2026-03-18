@@ -1,44 +1,22 @@
 # Trigger Monitor Worker
 
-> Purpose: Count/interval thresholds for active sessions → dispatch ClusteringPayload.
+> **Status: STUB** — This worker is not implemented and is not started by `start_dev.sh`.
 
-<!-- Populate from: workers/trigger_monitor/worker.py (verify path) -->
+## Current State
 
-## Role
+`workers/trigger_monitor/worker.py` contains an empty infinite loop. It is not
+started by `start_dev.sh` and does not process any tasks.
 
-The trigger monitor watches active sessions and dispatches clustering jobs when
-enough new questions have accumulated, or when a time interval has elapsed.
-This prevents over-clustering (every new question triggering a re-cluster) while
-ensuring timely processing.
+Do not build on this worker without a full implementation plan.
 
-## Thresholds
+## Original Intent
 
-| Threshold | Default | Config Key |
-|-----------|---------|-----------|
-| Count threshold | <!-- N --> comments | <!-- key --> |
-| Interval threshold | <!-- M --> seconds | <!-- key --> |
-
-<!-- Populate with actual values from worker config -->
-
-## Algorithm
-
-```
-For each active session:
-  pending_count = count of questions with embedding but no cluster assignment
-  time_since_last_cluster = now - session.last_clustered_at
-
-  if pending_count >= COUNT_THRESHOLD or time_since_last_cluster >= INTERVAL_THRESHOLD:
-    for each pending comment:
-      enqueue ClusteringPayload → QUEUE_CLUSTERING
-    session.last_clustered_at = now
-```
-
-## Session Tracking
-
-<!-- How does the monitor know which sessions are active? Redis set? DB query? -->
+The trigger monitor was intended to watch active sessions and dispatch clustering
+jobs based on count/interval thresholds, preventing over-clustering while ensuring
+timely processing. This responsibility is currently handled inline by the
+clustering worker itself, which triggers answer generation at milestones {3, 10, 25}.
 
 ## Relationship to Clustering Worker
 
-The trigger monitor dispatches to `QUEUE_CLUSTERING`.
-The clustering worker processes individual comments.
+The clustering worker directly enqueues to `QUEUE_ANSWER_GENERATION` at milestones.
 See [workers/clustering.md](clustering.md).
