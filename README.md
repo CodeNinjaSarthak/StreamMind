@@ -14,8 +14,8 @@ Teachers running live YouTube sessions are bombarded with chat messages — most
 
 <table>
   <tr>
-    <td><img src="Assets/Landing_page_light-mode.png" alt="Landing page — light mode" width="100%"></td>
-    <td><img src="Assets/Landing-page-dark_mode.png" alt="Landing page — dark mode" width="100%"></td>
+    <td><img src="Assets/Landing_page_light_mode.png" alt="Landing page — light mode" width="100%"></td>
+    <td><img src="Assets/Landing-page-dark-mode.png" alt="Landing page — dark mode" width="100%"></td>
   </tr>
   <tr>
     <td colspan="2" align="center"><em>Landing page — light &amp; dark mode</em></td>
@@ -23,7 +23,7 @@ Teachers running live YouTube sessions are bombarded with chat messages — most
 </table>
 
 <p align="center">
-  <img src="Assets/Working.png" alt="Live dashboard" width="100%">
+  <img src="Assets/Clutering-Working.png" alt="Live dashboard" width="100%">
   <br>
   <em>Live dashboard — real-time question clustering, AI answers, and YouTube integration</em>
 </p>
