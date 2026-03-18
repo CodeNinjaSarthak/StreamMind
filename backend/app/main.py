@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.app_name,
-    description="API for managing live doubt sessions with YouTube integration",
+    description="API for real-time YouTube teaching sessions with AI-powered Q&A",
     version=settings.app_version,
     debug=settings.debug,
 )

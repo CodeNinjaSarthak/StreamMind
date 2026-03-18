@@ -208,12 +208,11 @@ body {
 }
 
 .header-wordmark {
-  font-family: var(--font-display);
-  font-size: 11px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.02em;
   color: var(--color-accent);
-  text-transform: uppercase;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -290,12 +289,11 @@ body {
 
 /* Logo alias for landing page */
 .logo {
-  font-family: var(--font-display);
+  font-family: 'Syne', sans-serif;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-accent);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 /* ============================================================
@@ -1207,8 +1205,8 @@ button:disabled { opacity: 0.4; pointer-events: none; }
 .landing-hero > * { position: relative; z-index: 1; }
 
 .landing-hero h1 {
-  font-family: 'Bebas Neue', sans-serif; font-size: 72px; font-weight: 400;
-  color: var(--color-accent); margin-bottom: 20px; letter-spacing: 0.03em;
+  font-family: 'Syne', sans-serif; font-size: 72px; font-weight: 800;
+  color: var(--color-accent); margin-bottom: 20px; letter-spacing: -0.02em;
   line-height: 1;
 }
 .landing-hero .tagline {
