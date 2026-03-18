@@ -16,7 +16,7 @@ from pydantic import (
 class SessionCreate(BaseModel):
     """Session creation schema."""
 
-    youtube_video_id: str
+    youtube_video_id: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
 
@@ -35,7 +35,7 @@ class SessionResponse(BaseModel):
 
     id: UUID
     teacher_id: UUID
-    youtube_video_id: str
+    youtube_video_id: Optional[str]
     title: Optional[str]
     description: Optional[str]
     is_active: bool

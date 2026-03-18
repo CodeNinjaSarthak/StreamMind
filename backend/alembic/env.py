@@ -10,8 +10,10 @@ from sqlalchemy import (
     pool,
 )
 
-# Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add backend/ and project root to path so both app and workers are importable
+_backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _backend_dir)
+sys.path.insert(0, os.path.dirname(_backend_dir))
 
 from app.core.config import settings
 from app.db.base import Base
