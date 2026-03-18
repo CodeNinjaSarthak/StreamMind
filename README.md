@@ -44,6 +44,17 @@ youtube_polling worker  ──► Redis queue
 
 Comments flow from YouTube → Redis workers → Gemini AI for classification and embedding → pgvector for semantic clustering → answer generation → real-time WebSocket delivery to the teacher dashboard (and optionally back to the stream).
 
+## Features
+
+- **Real-time question clustering** — student comments are embedded and clustered live using nearest-centroid algorithm with milestone triggers
+- **RAG-augmented answers** — AI-generated answers grounded in teacher-uploaded documents (PDF, DOCX, TXT)
+- **YouTube integration** — polls live chat, posts answers directly back to YouTube
+- **Content moderation** — Gemini-powered filtering before classification and before YouTube posting
+- **WebSocket dashboard** — real-time updates with exponential backoff reconnection and 100-message cap
+- **Teacher isolation** — every data endpoint enforces ownership; RAG retrieval is scoped per teacher
+- **Observability** — Prometheus metrics, circuit breaker pattern on all Gemini calls, structured logging
+- **Scheduled maintenance** — automatic daily quota reset and hourly expired token cleanup
+
 ## Quick Start
 
 ### Prerequisites
@@ -84,28 +95,47 @@ This starts PostgreSQL, Redis, the FastAPI backend, and all workers. The API is 
 cd backend && alembic upgrade head
 ```
 
-## Running Without Docker
+## Running Without Docker (Native Development)
 
-**Backend:**
+**Prerequisites:**
+- Python 3.13+
+- Node.js 20+
+- PostgreSQL 15+ with the [pgvector extension](https://github.com/pgvector/pgvector)
+- Redis 7+
+
+**Steps:**
+
+1. **Clone and set up environment variables:**
 ```bash
-pip install -r backend/requirements.txt
-uvicorn backend.app.main:app --reload
+cp .env.example .env.development
+# Fill in your GEMINI_API_KEY, SECRET_KEY, ENCRYPTION_KEY, and YouTube OAuth credentials
 ```
 
-**Workers:**
+2. **Install backend dependencies:**
 ```bash
-python -m workers.classification.worker
-python -m workers.embeddings.worker
-python -m workers.clustering.worker
-python -m workers.answer_generation.worker
-python -m workers.trigger_monitor.worker
+cd backend
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-**Chrome extension:**
+3. **Install frontend dependencies:**
 ```bash
-cd chrome-extension && npm install && npm run build
+cd frontend && npm install
 ```
-Load `chrome-extension/dist` as an unpacked extension in Chrome.
+
+4. **Run database migrations:**
+```bash
+make migrate
+```
+
+5. **Start all services in one command:**
+```bash
+./start_dev.sh
+```
+This opens a tmux session with 9 panes: backend API, 6 AI workers, scheduler, and the Vite dev server.
+
+6. **Open the app:**
+   Visit `http://localhost:5173`
 
 ## API
 
@@ -129,6 +159,13 @@ make format   # auto-format
 make lint     # run linters
 make test     # run tests
 ```
+
+## Known Limitations
+
+- **No production deployment config** — docker-compose is development-oriented; nginx and production Dockerfile are not included
+- **Chrome extension** — functional but not published to the Chrome Web Store
+- **YouTube quota** — the YouTube Data API v3 has daily quota limits; high-traffic sessions may hit limits
+- **Single-region** — no multi-region or horizontal scaling configuration
 
 ## License
 
