@@ -43,7 +43,7 @@ Provides:
 - `logout()` — clears tokens, calls logout API
 - `refreshToken()` — auto-refreshes on 401
 
-Token storage: <!-- localStorage? sessionStorage? httpOnly cookie? -->
+Token storage: `localStorage` — keys `token` and `refreshToken`. Required for WebSocket auth (first-message JWT pattern).
 
 Hook: `useAuth()` from `frontend/src/hooks/useAuth.js`
 

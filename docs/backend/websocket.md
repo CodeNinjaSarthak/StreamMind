@@ -15,10 +15,13 @@ Responsibilities:
 
 ## Authentication
 
-WebSocket connections accept an optional `?token=` query parameter.
-- If provided: validated as JWT; session ownership verified
-- Close code `4001`: invalid/expired token
-- Close code `4003`: session not owned by this user
+WebSocket auth uses a first-message pattern. After connecting to `/ws/{session_id}`:
+1. Client sends `{"type": "auth", "token": "<jwt>"}` as the first message
+2. Backend validates JWT signature, checks blacklist, and verifies session ownership
+3. An optional `?token=` query parameter is also supported
+
+- Close code `4001`: invalid/expired token or missing auth message
+- Close code `4003`: valid token but session not owned by this user
 
 ## Heartbeat
 

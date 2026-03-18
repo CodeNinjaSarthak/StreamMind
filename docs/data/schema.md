@@ -8,27 +8,29 @@
 ## Entity Relationship Overview
 
 ```
-User ──< StreamingSession ──< Comment ──> Cluster
-                                           │
-                                           └──< Answer
-Document (RAG store, standalone)
+Teacher (1) ──▶ (M) StreamingSession (1) ──▶ (M) Comment
+                                       (1) ──▶ (M) Cluster (1) ──▶ (M) Answer
+Comment (M) ──▶ (1) Cluster  [SET NULL on cluster delete]
+Answer (M) ──▶ (1) Comment   [SET NULL on comment delete]
+Teacher (1) ──▶ (1) YouTubeToken
+Teacher (1) ──▶ (M) Quota
+Teacher (1) ──▶ (M) RAGDocument
 ```
-
-<!-- Expand with actual cardinalities and FK references -->
 
 ---
 
-## User
+## Teacher
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
-| `id` | UUID | PK | |
-| `email` | str | UNIQUE, NOT NULL | |
-| `hashed_password` | str | NOT NULL | bcrypt 12 rounds |
-| `name` | str | NOT NULL | |
-| `is_active` | bool | DEFAULT True | |
-| `created_at` | datetime | NOT NULL | |
-| `updated_at` | datetime | NOT NULL | |
+| `id` | UUID | PK | `default=uuid.uuid4` |
+| `email` | String(255) | UNIQUE, NOT NULL, indexed | |
+| `name` | String(255) | NOT NULL | |
+| `hashed_password` | String(255) | NOT NULL | bcrypt 12 rounds |
+| `is_active` | Boolean | NOT NULL, DEFAULT True | |
+| `is_verified` | Boolean | NOT NULL, DEFAULT False | |
+| `created_at` | DateTime(tz) | NOT NULL | `datetime.now(timezone.utc)` |
+| `updated_at` | DateTime(tz) | NOT NULL | auto-updated |
 
 ---
 
@@ -36,16 +38,18 @@ Document (RAG store, standalone)
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
-| `id` | UUID | PK | |
-| `teacher_id` | UUID | FK → User.id, NOT NULL | ownership check |
-| `title` | str | NOT NULL | |
-| `youtube_video_id` | str | nullable | |
-| `youtube_access_token` | str | nullable | encrypted via `encrypt_data` |
-| `youtube_refresh_token` | str | nullable | encrypted |
-| `youtube_chat_id` | str | nullable | |
-| `is_active` | bool | DEFAULT False | |
-| `created_at` | datetime | NOT NULL | |
-| `last_clustered_at` | datetime | nullable | used by trigger-monitor |
+| `id` | UUID | PK | `default=uuid.uuid4` |
+| `teacher_id` | UUID | FK → Teacher.id (CASCADE), NOT NULL, indexed | ownership check |
+| `youtube_video_id` | String(255) | nullable, indexed | optional — sessions can exist without YouTube |
+| `title` | String(500) | nullable | |
+| `description` | Text | nullable | |
+| `is_active` | Boolean | NOT NULL, DEFAULT True | |
+| `started_at` | DateTime(tz) | NOT NULL | `datetime.now(timezone.utc)` |
+| `ended_at` | DateTime(tz) | nullable | set when session ends |
+| `created_at` | DateTime(tz) | NOT NULL | |
+| `updated_at` | DateTime(tz) | NOT NULL | auto-updated |
+
+**Indexes:** `idx_session_teacher_active` (teacher_id, is_active), `idx_session_youtube_video` (youtube_video_id)
 
 ---
 
@@ -53,18 +57,22 @@ Document (RAG store, standalone)
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
-| `id` | UUID | PK | |
-| `session_id` | UUID | FK → StreamingSession.id, NOT NULL | |
-| `youtube_comment_id` | str | NOT NULL, UNIQUE | `"manual:{uuid4()}"` for manual |
-| `text` | str | NOT NULL | |
-| `author` | str | nullable | YouTube display name |
-| `is_question` | bool | nullable | set by classification worker |
-| `confidence_score` | float | nullable | 0.0–1.0 |
-| `embedding` | Vector(1536) | nullable | pgvector; set by embeddings worker |
-| `cluster_id` | UUID | FK → Cluster.id, nullable | set by clustering worker |
-| `created_at` | datetime | NOT NULL | |
+| `id` | UUID | PK | `default=uuid.uuid4` |
+| `session_id` | UUID | FK → StreamingSession.id (CASCADE), NOT NULL, indexed | |
+| `cluster_id` | UUID | FK → Cluster.id (SET NULL), nullable, indexed | set by clustering worker |
+| `youtube_comment_id` | String(255) | NOT NULL, UNIQUE, indexed | `"manual:{uuid4()}"` for manual comments |
+| `author_name` | String(255) | NOT NULL | YouTube display name |
+| `author_channel_id` | String(255) | nullable | YouTube channel ID |
+| `text` | Text | NOT NULL | |
+| `is_question` | Boolean | NOT NULL, DEFAULT False | set by classification worker |
+| `is_answered` | Boolean | NOT NULL, DEFAULT False | |
+| `confidence_score` | Float | nullable | 0.0–1.0 |
+| `embedding` | Vector(768) | nullable | pgvector; HNSW indexed (cosine_ops, m=16, ef=64) |
+| `published_at` | DateTime(tz) | nullable | YouTube publish timestamp |
+| `created_at` | DateTime(tz) | NOT NULL | |
+| `updated_at` | DateTime(tz) | NOT NULL | auto-updated |
 
-**Indexes:** `session_id`, `cluster_id`, `youtube_comment_id` (unique)
+**Indexes:** `idx_comment_session_question` (session_id, is_question), `idx_comment_session_answered` (session_id, is_answered), `idx_comment_cluster` (cluster_id), `idx_comments_embedding_hnsw` (embedding, vector_cosine_ops)
 
 ---
 
@@ -72,12 +80,17 @@ Document (RAG store, standalone)
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
-| `id` | UUID | PK | |
-| `session_id` | UUID | FK → StreamingSession.id, NOT NULL | |
-| `centroid` | Vector(1536) | NOT NULL | mean of member embeddings |
-| `representative_text` | str | nullable | text of seed/most-representative comment |
-| `created_at` | datetime | NOT NULL | |
-| `updated_at` | datetime | NOT NULL | |
+| `id` | UUID | PK | `default=uuid.uuid4` |
+| `session_id` | UUID | FK → StreamingSession.id (CASCADE), NOT NULL, indexed | |
+| `title` | String(500) | NOT NULL | summarized by Gemini at count=3 |
+| `description` | Text | nullable | |
+| `similarity_threshold` | Float | NOT NULL, DEFAULT 0.8 | per-cluster threshold |
+| `centroid_embedding` | Vector(768) | nullable | HNSW indexed (cosine_ops, m=16, ef=64) |
+| `comment_count` | Integer | NOT NULL, DEFAULT 0 | denormalized for centroid update formula |
+| `created_at` | DateTime(tz) | NOT NULL | |
+| `updated_at` | DateTime(tz) | NOT NULL | auto-updated |
+
+**Indexes:** `idx_cluster_session` (session_id), `idx_clusters_centroid_embedding_hnsw` (centroid_embedding, vector_cosine_ops)
 
 ---
 
@@ -85,28 +98,71 @@ Document (RAG store, standalone)
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
-| `id` | UUID | PK | |
-| `cluster_id` | UUID | FK → Cluster.id, NOT NULL | |
-| `session_id` | UUID | FK → StreamingSession.id, NOT NULL | |
-| `text` | str | NOT NULL | generated by LLM |
-| `is_approved` | bool | DEFAULT False | teacher must approve |
-| `is_posted` | bool | DEFAULT False | set by youtube_posting worker |
-| `posted_at` | datetime | nullable | |
-| `created_at` | datetime | NOT NULL | |
-| `updated_at` | datetime | NOT NULL | |
+| `id` | UUID | PK | `default=uuid.uuid4` |
+| `cluster_id` | UUID | FK → Cluster.id (CASCADE), NOT NULL, indexed | |
+| `comment_id` | UUID | FK → Comment.id (SET NULL), nullable, indexed | representative comment |
+| `text` | Text | NOT NULL | generated by LLM |
+| `youtube_comment_id` | String(255) | UNIQUE, nullable | YouTube reply ID after posting |
+| `is_posted` | Boolean | NOT NULL, DEFAULT False | set by youtube_posting worker |
+| `posted_at` | DateTime(tz) | nullable | |
+| `created_at` | DateTime(tz) | NOT NULL | |
+| `updated_at` | DateTime(tz) | NOT NULL | auto-updated |
+
+**Indexes:** `idx_answer_cluster_posted` (cluster_id, is_posted)
 
 ---
 
-## Document (RAG)
+## YouTubeToken
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
-| `id` | UUID | PK | |
-| `teacher_id` | UUID | FK → User.id, NOT NULL | |
-| `filename` | str | NOT NULL | |
-| `content_chunk` | str | NOT NULL | extracted text chunk |
-| `embedding` | Vector(1536) | NOT NULL | |
-| `created_at` | datetime | NOT NULL | |
+| `id` | UUID | PK | `default=uuid.uuid4` |
+| `teacher_id` | UUID | FK → Teacher.id (CASCADE), UNIQUE, NOT NULL | one token per teacher |
+| `access_token` | Text | NOT NULL | encrypted at rest via Fernet |
+| `refresh_token` | Text | nullable | encrypted at rest |
+| `token_type` | String(50) | NOT NULL, DEFAULT "Bearer" | |
+| `scope` | Text | nullable | |
+| `expires_at` | DateTime(tz) | NOT NULL | |
+| `created_at` | DateTime(tz) | NOT NULL | |
+| `updated_at` | DateTime(tz) | NOT NULL | auto-updated |
+
+---
+
+## Quota
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `id` | UUID | PK | `default=uuid.uuid4` |
+| `teacher_id` | UUID | FK → Teacher.id (CASCADE), NOT NULL, indexed | |
+| `quota_type` | String(50) | NOT NULL | e.g., "youtube_poll", "youtube_post", "gemini" |
+| `used` | Integer | NOT NULL, DEFAULT 0 | |
+| `limit` | Integer | NOT NULL | |
+| `period` | String(20) | NOT NULL | "daily" or "monthly" |
+| `reset_at` | DateTime(tz) | NOT NULL | |
+| `created_at` | DateTime(tz) | NOT NULL | |
+| `updated_at` | DateTime(tz) | NOT NULL | auto-updated |
+
+**Constraints:** `uq_teacher_quota_period` (teacher_id, quota_type, period)
+**Indexes:** `idx_quota_teacher_type` (teacher_id, quota_type)
+
+---
+
+## RAGDocument
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `id` | UUID | PK | `default=uuid.uuid4` |
+| `teacher_id` | UUID | FK → Teacher.id (CASCADE), nullable | nullable for potential global docs |
+| `title` | String(500) | NOT NULL | |
+| `content` | Text | NOT NULL | extracted text content |
+| `source_type` | String(50) | nullable | "pdf", "url", "text" |
+| `source_url` | String(1000) | nullable | |
+| `doc_metadata` | JSONB | nullable | custom metadata dict (column name: "metadata") |
+| `embedding` | Vector(768) | nullable | HNSW indexed (cosine_ops, m=16, ef=64) |
+| `created_at` | DateTime(tz) | NOT NULL | |
+| `updated_at` | DateTime(tz) | NOT NULL | auto-updated |
+
+**Indexes:** `idx_rag_source_type` (source_type), `idx_rag_documents_embedding_hnsw` (embedding, vector_cosine_ops)
 
 ---
 

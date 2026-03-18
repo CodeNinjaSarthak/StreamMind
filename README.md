@@ -1,6 +1,32 @@
 # AI Powered Live Doubt Manager
 
-A production-grade system that helps teachers manage live YouTube teaching sessions at scale. It polls the YouTube live chat in real time, uses Gemini AI to classify and cluster student questions, generates answers, and delivers them back to the teacher's dashboard over WebSocket — all while optionally posting responses directly into the stream.
+> Real-time semantic clustering of YouTube live chat via Gemini embeddings, pgvector cosine search, and a 6-stage Redis worker pipeline — with RAG-augmented answer generation and WebSocket delivery.
+
+> **Portfolio / demo project.** Built to demonstrate full-stack architecture with AI pipelines, real-time WebSockets, and worker-based processing. Not deployed to production.
+
+- **Online nearest-centroid clustering** — each incoming question is embedded (768-dim Gemini vectors), compared against existing cluster centroids via pgvector cosine distance, and assigned or seeded into a new cluster in a single atomic transaction — no batch reprocessing.
+- **Teacher-scoped RAG retrieval** — answer generation queries only the documents uploaded by the session's owner, using the cluster centroid as the search vector so retrieved context matches the cluster's theme, not just one question's phrasing.
+- **Circuit-breaker-protected worker pipeline** — six independent workers connected by Redis ZSET queues with priority scoring, DLQ after 3 retries, and a circuit breaker on every Gemini call that trips open on sustained failures and exports state to Prometheus.
+
+Teachers running live YouTube sessions are bombarded with chat messages — most are noise, but buried in the flood are genuine student questions. This system watches the live chat, uses Gemini AI to find and cluster those questions, and generates grounded answers using teacher-uploaded materials. The result is a real-time dashboard that turns an unreadable chat stream into an organized, actionable Q&A feed — built for educators who teach at scale.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="Assets/Landing_page_light-mode.png" alt="Landing page — light mode" width="100%"></td>
+    <td><img src="Assets/Landing-page-dark_mode.png" alt="Landing page — dark mode" width="100%"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><em>Landing page — light &amp; dark mode</em></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="Assets/Working.png" alt="Live dashboard" width="100%">
+  <br>
+  <em>Live dashboard — real-time question clustering, AI answers, and YouTube integration</em>
+</p>
 
 ## Stack
 
@@ -12,6 +38,14 @@ A production-grade system that helps teachers manage live YouTube teaching sessi
 | Frontend | React 19 + Vite, served by FastAPI |
 | Browser | Chrome extension (TypeScript + Vite) |
 | Infrastructure | Docker Compose (local), Terraform (cloud), Prometheus + Grafana (observability) |
+
+## How It Works
+
+1. **Connect** — Teacher links their YouTube live stream via OAuth and starts a session
+2. **Ingest** — A polling worker pulls new chat messages into a Redis queue every second
+3. **Classify & Embed** — Gemini labels each message as a question or not, then generates a 768-dim embedding vector
+4. **Cluster** — Nearest-centroid grouping via pgvector clusters similar questions together; answer generation triggers at milestone counts (3, 10, 25)
+5. **Answer & Deliver** — RAG-augmented answers are generated from teacher-uploaded documents, pushed to the dashboard over WebSocket, and optionally posted back to YouTube chat
 
 ## Architecture
 
@@ -46,14 +80,16 @@ Comments flow from YouTube → Redis workers → Gemini AI for classification an
 
 ## Features
 
-- **Real-time question clustering** — student comments are embedded and clustered live using nearest-centroid algorithm with milestone triggers
-- **RAG-augmented answers** — AI-generated answers grounded in teacher-uploaded documents (PDF, DOCX, TXT)
-- **YouTube integration** — polls live chat, posts answers directly back to YouTube
-- **Content moderation** — Gemini-powered filtering before classification and before YouTube posting
-- **WebSocket dashboard** — real-time updates with exponential backoff reconnection and 100-message cap
-- **Teacher isolation** — every data endpoint enforces ownership; RAG retrieval is scoped per teacher
-- **Observability** — Prometheus metrics, circuit breaker pattern on all Gemini calls, structured logging
-- **Scheduled maintenance** — automatic daily quota reset and hourly expired token cleanup
+| Feature | What it does |
+|---|---|
+| Real-time question clustering | Student comments are embedded and clustered live using nearest-centroid algorithm with milestone triggers |
+| RAG-augmented answers | AI-generated answers grounded in teacher-uploaded documents (PDF, DOCX, TXT) |
+| YouTube integration | Polls live chat, posts answers directly back to YouTube |
+| Content moderation | Gemini-powered filtering before classification and before YouTube posting |
+| WebSocket dashboard | Real-time updates with exponential backoff reconnection and 100-message cap |
+| Teacher isolation | Every data endpoint enforces ownership; RAG retrieval is scoped per teacher |
+| Observability | Prometheus metrics, circuit breaker pattern on all Gemini calls, structured logging |
+| Scheduled maintenance | Automatic daily quota reset and hourly expired token cleanup |
 
 ## Quick Start
 
@@ -142,11 +178,17 @@ This opens a tmux session with 9 panes: backend API, 6 AI workers, scheduler, an
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/health` | Health check |
+| `POST` | `/api/v1/auth/register` | Register a new teacher |
 | `POST` | `/api/v1/auth/login` | Authenticate, returns JWT |
+| `GET` | `/api/v1/auth/me` | Get current authenticated teacher |
 | `GET` | `/api/v1/sessions` | List teacher's sessions |
-| `POST` | `/api/v1/sessions` | Create a new session |
-| `GET` | `/api/v1/clusters` | List question clusters for a session |
-| `POST` | `/api/v1/dashboard/approve` | Approve an AI-generated answer |
+| `POST` | `/api/v1/sessions` | Create a new streaming session |
+| `GET` | `/api/v1/sessions/{id}/clusters` | List question clusters for a session |
+| `GET` | `/api/v1/sessions/{id}/analytics` | Get aggregate session analytics |
+| `POST` | `/api/v1/dashboard/sessions/{id}/manual-question` | Submit a manual question |
+| `POST` | `/api/v1/dashboard/answers/{id}/approve` | Approve an AI-generated answer |
+| `GET` | `/api/v1/dashboard/sessions/{id}/stats` | Get session stats |
+| `POST` | `/api/v1/rag/documents` | Upload a document for RAG retrieval |
 | `GET` | `/api/v1/youtube/auth/url` | Start YouTube OAuth flow |
 | `WS` | `/ws/{session_id}` | Real-time event stream |
 
@@ -163,7 +205,7 @@ make test     # run tests
 ## Known Limitations
 
 - **No production deployment config** — docker-compose is development-oriented; nginx and production Dockerfile are not included
-- **Chrome extension** — functional but not published to the Chrome Web Store
+- **Chrome extension** — functional but currently in testing
 - **YouTube quota** — the YouTube Data API v3 has daily quota limits; high-traffic sessions may hit limits
 - **Single-region** — no multi-region or horizontal scaling configuration
 

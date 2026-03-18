@@ -1,6 +1,6 @@
 # WebSocket Events
 
-> Purpose: All 14 event types with exact JSON payloads and the base envelope.
+> Purpose: All event types with exact JSON payloads and the base envelope.
 
 <!-- Populate from: backend/app/services/websocket/, workers that emit events -->
 <!-- This is the SINGLE source of truth for WS event shapes. -->
@@ -8,10 +8,11 @@
 ## Connection
 
 ```
-ws://{host}/ws/sessions/{session_id}?token={access_token}
+ws://{host}/ws/{session_id}
 ```
 
-**Auth:** Optional `?token=` query param.
+**Auth:** First message must be `{"type": "auth", "token": "<jwt>"}`.
+Optional `?token=` query param also supported.
 - Missing/invalid token: close code `4001`
 - Session not owned by user: close code `4003`
 
@@ -32,16 +33,17 @@ All events follow this envelope:
 
 ## Event Types
 
-### 1. `comment_received`
+### 1. `comment_created`
 Emitted when a new comment (YouTube or manual) is ingested.
 
 ```json
 {
-  "type": "comment_received",
+  "type": "comment_created",
   "session_id": "uuid",
   "timestamp": "...",
   "data": {
     "comment_id": "uuid",
+    "session_id": "uuid",
     "text": "string",
     "author": "string",
     "youtube_comment_id": "string"
@@ -70,26 +72,63 @@ Emitted after classification worker processes a comment.
 ---
 
 ### 3. `comment_embedded`
-<!-- Populate payload -->
+Emitted after embeddings worker generates the comment's vector.
+
+```json
+{
+  "type": "comment_embedded",
+  "session_id": "uuid",
+  "timestamp": "...",
+  "data": {
+    "comment_id": "uuid"
+  }
+}
+```
 
 ---
 
 ### 4. `cluster_created`
-<!-- Populate payload -->
+Emitted when the clustering worker creates a new cluster.
+
+```json
+{
+  "type": "cluster_created",
+  "session_id": "uuid",
+  "timestamp": "...",
+  "data": {
+    "id": "uuid",
+    "title": "string",
+    "comment_count": 1
+  }
+}
+```
 
 ---
 
 ### 5. `cluster_updated`
-<!-- Populate payload: cluster_id, new comment count, updated centroid? -->
+Emitted when a comment joins an existing cluster.
+
+```json
+{
+  "type": "cluster_updated",
+  "session_id": "uuid",
+  "timestamp": "...",
+  "data": {
+    "id": "uuid",
+    "title": "string",
+    "comment_count": 5
+  }
+}
+```
 
 ---
 
-### 6. `answer_generated`
+### 6. `answer_ready`
 Emitted when answer_generation worker creates an Answer record.
 
 ```json
 {
-  "type": "answer_generated",
+  "type": "answer_ready",
   "session_id": "uuid",
   "timestamp": "...",
   "data": {
@@ -103,17 +142,23 @@ Emitted when answer_generation worker creates an Answer record.
 
 ---
 
-### 7. `answer_approved`
-<!-- Populate payload -->
+### 7. `cluster_summary_failed`
+Emitted when Gemini cluster title summarization fails.
+
+```json
+{
+  "type": "cluster_summary_failed",
+  "session_id": "uuid",
+  "timestamp": "...",
+  "data": {
+    "cluster_id": "uuid"
+  }
+}
+```
 
 ---
 
-### 8. `answer_edited`
-<!-- Populate payload -->
-
----
-
-### 9. `answer_posted`
+### 8. `answer_posted`
 Emitted by youtube_posting worker after successfully posting to YouTube.
 
 ```json
@@ -131,9 +176,12 @@ Emitted by youtube_posting worker after successfully posting to YouTube.
 
 ---
 
-### 10–14. `...`
-<!-- Populate remaining event types from source code -->
+### 9. `quota_alert`
+Emitted when YouTube API quota is running low.
+
+### 10. `quota_exceeded`
+Emitted when YouTube API quota is exhausted.
 
 ## Heartbeat
 
-<!-- Heartbeat event shape and interval, if applicable -->
+The WebSocket connection supports ping/pong for keep-alive. Heartbeat interval: 30 seconds (configurable via `WEBSOCKET_HEARTBEAT_INTERVAL`). Connection timeout: 300 seconds (configurable via `WEBSOCKET_TIMEOUT`).

@@ -24,7 +24,7 @@ bcrypt with cost factor 12 (`bcrypt_rounds = 12`).
 All protected endpoints use `Depends(get_current_active_user)`, which:
 1. Extracts Bearer token from `Authorization` header
 2. Decodes and validates JWT signature + expiry
-3. Checks token blacklist (Redis key `blacklist:{jti}`)
+3. Checks token blacklist (Redis key `blacklist:token:{hash}`)
 4. Loads user from DB; verifies `is_active=True`
 5. Returns `User` model or raises `401 Unauthorized`
 
@@ -33,7 +33,7 @@ All protected endpoints use `Depends(get_current_active_user)`, which:
 On logout, the token's `jti` claim is written to Redis with TTL matching the remaining
 token lifetime. This ensures invalidated tokens cannot be reused even before expiry.
 
-Redis key pattern: `blacklist:{jti}`
+Redis key pattern: `blacklist:token:{hash}`
 
 ## Refresh Flow
 

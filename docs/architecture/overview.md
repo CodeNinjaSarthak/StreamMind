@@ -6,15 +6,31 @@
 
 ## System Purpose
 
-<!-- What problem does this system solve? Who uses it? -->
+AI Live Doubt Manager helps teachers manage live YouTube teaching sessions at scale. It polls the YouTube live chat in real time, uses Gemini AI to classify and cluster student questions, generates RAG-augmented answers, and delivers them back to the teacher's dashboard over WebSocket — with optional posting directly to the YouTube stream.
+
+**Users:** Teachers running live YouTube educational sessions.
+**Problem:** Live chat during popular sessions becomes an unreadable flood. Genuine student questions get buried. Teachers cannot respond to questions at scale.
 
 ## Component Inventory
 
-<!-- List all components: FastAPI backend, Redis workers, PostgreSQL, React frontend, Chrome extension, YouTube API -->
+| Component | Technology | Location |
+|-----------|-----------|----------|
+| Backend API | FastAPI (Python 3.13), uvicorn | `backend/app/` |
+| PostgreSQL | PostgreSQL 15 + pgvector extension | Docker or native |
+| Redis | Redis 7 | Docker or native |
+| Worker Pipeline | 6 independent Python processes + scheduler | `workers/` |
+| Frontend SPA | React 19, Vite 7, Recharts | `frontend/src/` |
+| Chrome Extension | TypeScript, Manifest V3 | `chrome-extension/` |
+| AI Services | Google Gemini (gemini-2.5-flash, gemini-embedding-001) | Via API |
+| Observability | Prometheus metrics, structured logging | `backend/app/core/metrics.py` |
 
 ## Design Principles
 
-<!-- Core principles guiding architecture decisions -->
+1. **Decouple ingress from processing** — Redis queues separate API/polling from AI work, allowing each stage to fail independently
+2. **Ownership-first data access** — Every query JOINs to StreamingSession and filters `teacher_id == current_user.id`
+3. **Real-time without coupling** — Workers publish to Redis pub/sub; the API relays to WebSocket clients. Workers never hold WS connections
+4. **Online over batch** — Nearest-centroid clustering processes each question as it arrives, no batch re-processing
+5. **Fail to queue, not to void** — Tasks persist in Redis ZSET until consumed; DLQ captures exhausted retries
 
 ## Anti-Duplication Rules
 

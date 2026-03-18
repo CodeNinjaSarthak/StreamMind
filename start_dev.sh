@@ -65,7 +65,7 @@ CMDS=(
   "python workers/youtube_polling/worker.py"
   "python workers/youtube_posting/worker.py"
   "cd workers && python -m scheduler.worker"
-  "npm run dev"
+  "echo 'Waiting for backend on :8000...' && until curl -sf http://localhost:8000/docs >/dev/null 2>&1; do sleep 1; done && echo 'Backend ready — starting Vite' && npm run dev"
 )
 
 # Build the shell command for a given pane index.

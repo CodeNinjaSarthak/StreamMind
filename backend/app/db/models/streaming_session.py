@@ -27,7 +27,7 @@ class StreamingSession(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     teacher_id = Column(UUID(as_uuid=True), ForeignKey("teachers.id", ondelete="CASCADE"), nullable=False, index=True)
-    youtube_video_id = Column(String(255), nullable=False, index=True)
+    youtube_video_id = Column(String(255), nullable=True, index=True)
     title = Column(String(500), nullable=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)

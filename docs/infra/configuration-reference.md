@@ -23,9 +23,27 @@
 | `CORS_ORIGINS` | str (comma-separated) | `http://localhost:5173,http://localhost:8080` | No | backend | |
 | `LOG_LEVEL` | str | `INFO` | No | backend, workers | |
 | `LOG_JSON` | bool | `False` | No | backend | Structured JSON logging |
-| `ENCRYPTION_KEY` | str | — | Yes | backend | For `encrypt_data`/`decrypt_data` |
-| `YOUTUBE_POLLING_INTERVAL` | int | <!-- N --> | No | workers | Seconds between polls |
-| <!-- add remaining --> | | | | | |
+| `ENCRYPTION_KEY` | str | — | Yes | backend | ≥32 chars; Fernet encryption for OAuth tokens |
+| `ENVIRONMENT` | str | `development` | No | backend | "development", "staging", "production" |
+| `DEBUG` | bool | `False` | No | backend | |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE` | int | `60` | No | backend | Per-IP rate limiting |
+| `RATE_LIMIT_ENABLED` | bool | `True` | No | backend | |
+| `PASSWORD_BCRYPT_ROUNDS` | int | `12` | No | backend | |
+| `GEMINI_MODEL` | str | `gemini-2.5-flash` | No | workers | Classification + answer gen model |
+| `GEMINI_EMBEDDING_MODEL` | str | `gemini-embedding-001` | No | workers | Embedding model |
+| `CLASSIFICATION_CONFIDENCE_THRESHOLD` | float | `0.4` | No | workers | Min confidence for embedding queue |
+| `CLUSTERING_SIMILARITY_THRESHOLD` | float | `0.65` | No | workers | pgvector cosine similarity cutoff |
+| `DEFAULT_DAILY_ANSWER_LIMIT` | int | `100` | No | backend | Per-teacher daily answer limit |
+| `DEFAULT_MONTHLY_SESSION_LIMIT` | int | `30` | No | backend | Per-teacher monthly session limit |
+| `ENABLE_METRICS` | bool | `True` | No | backend, workers | Prometheus metrics |
+| `METRICS_PORT` | int | `9090` | No | backend | |
+| `WEBSOCKET_HEARTBEAT_INTERVAL` | int | `30` | No | backend | Seconds between heartbeats |
+| `WEBSOCKET_TIMEOUT` | int | `300` | No | backend | Connection timeout in seconds |
+| `MOCK_YOUTUBE` | bool | `False` | No | workers | Use mock YouTube polling |
+| `DATABASE_POOL_SIZE` | int | `5` | No | backend | SQLAlchemy pool size |
+| `DATABASE_MAX_OVERFLOW` | int | `10` | No | backend | SQLAlchemy max overflow |
+| `REDIS_MAX_CONNECTIONS` | int | `10` | No | backend, workers | |
+| `PROMETHEUS_MULTIPROC_DIR` | str | `/tmp/prometheus_multiproc` | No | backend, workers | Multiprocess metrics dir |
 
 ## Notes
 

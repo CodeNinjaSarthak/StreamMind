@@ -11,16 +11,16 @@
 ```json
 {
   "answer_id": "uuid",
-  "session_id": "uuid",
-  "answer_text": "string",
-  "chat_id": "string"
+  "session_id": "uuid"
 }
 ```
 
 ## Processing
 
-1. Read `chat_id` from Redis cache (set by youtube_polling worker)
-2. Call `YouTubeClient.post_message(chat_id, answer_text)`
+1. Fetch Answer, StreamingSession, and YouTubeToken from DB
+2. Check YouTube quota before posting (costs 50 units)
+3. Get `live_chat_id` from Redis cache (set by youtube_polling worker); retry if not cached
+4. Call `YouTubeClient.post_message(chat_id, answer_text)`
 3. Update `Answer.is_posted = True`
 4. Emit `answer_posted` WebSocket event to session
 
@@ -34,7 +34,7 @@ See [data/quota-model.md](../data/quota-model.md) — do not duplicate the quota
 ## chat_id Source
 
 The `chat_id` is cached in Redis by the youtube_polling worker.
-Redis key pattern: <!-- document the key pattern -->
+Redis key pattern: `youtube:poll:{session_id}:chat_id` (TTL: 3600s)
 
 ## Error Handling
 

@@ -32,7 +32,11 @@ See [infra/deployment.md](../infra/deployment.md) for load balancer configuratio
 
 ## pgvector at Scale
 
-<!-- Indexing strategy for 1536-dim vectors; approximate nearest neighbor options -->
+<!-- Indexing strategy for 768-dim vectors; approximate nearest neighbor options -->
+
+Current indexing: HNSW indexes on all three vector columns (`comments.embedding`, `clusters.centroid_embedding`, `rag_documents.embedding`) using `vector_cosine_ops` with tuning parameters `m=16, ef_construction=64`.
+
+At current scale (hundreds to low thousands of comments per session), HNSW handles queries efficiently. At O(10K+) clusters per session, monitor query latency and consider increasing `ef_search` or partitioning by session.
 
 ## Queue Scaling
 

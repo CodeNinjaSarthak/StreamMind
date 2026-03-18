@@ -19,8 +19,8 @@
 `backend/app/core/encryption.py`
 
 Used to encrypt sensitive values before storing in PostgreSQL:
-- `StreamingSession.youtube_access_token`
-- `StreamingSession.youtube_refresh_token`
+- `YouTubeToken.access_token`
+- `YouTubeToken.refresh_token`
 
 ```python
 from backend.app.core.encryption import encrypt_data, decrypt_data
@@ -29,14 +29,14 @@ encrypted = encrypt_data(plaintext_token)   # stores in DB
 decrypted = decrypt_data(encrypted_token)   # retrieved from DB for API calls
 ```
 
-Algorithm: <!-- Fernet? AES-GCM? Populate from source -->
-Key source: `ENCRYPTION_KEY` environment variable
+Algorithm: Fernet (symmetric encryption via `cryptography.fernet.Fernet`)
+Key derivation: First 32 bytes of `ENCRYPTION_KEY` env var, base64-encoded for Fernet. Config validator ensures key is ≥32 characters.
 
 ## Rotating ENCRYPTION_KEY
 
 If the encryption key must be rotated:
 1. Generate new key
-2. For each `StreamingSession` with stored tokens:
+2. For each `YouTubeToken` with stored tokens:
    - Decrypt with old key
    - Re-encrypt with new key
    - Save

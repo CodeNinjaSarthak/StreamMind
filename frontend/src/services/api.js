@@ -3,6 +3,13 @@
  * Base helper redirects to /login on 401.
  */
 
+function parseDetail(detail) {
+  if (!detail) return null;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) return detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+  return String(detail);
+}
+
 let refreshPromise = null;
 
 export async function refreshAccessToken() {
@@ -74,7 +81,7 @@ async function apiFetch(path, options = {}, token = null) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || body.message || `HTTP ${res.status}`);
+    throw new Error(parseDetail(body.detail) || body.message || `HTTP ${res.status}`);
   }
 
   return res.status === 204 ? null : res.json();

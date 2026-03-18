@@ -31,8 +31,8 @@ FastAPI will:
 
 | Service | Dockerfile | Image |
 |---------|-----------|-------|
-| Backend | `backend/Dockerfile` | `ai-doubt-manager-backend` |
-| Workers | `workers/Dockerfile` | `ai-doubt-manager-workers` |
+| Backend | `infra/docker/api.Dockerfile` | `ai-doubt-manager-backend` |
+| Workers | `infra/docker/worker.Dockerfile` | `ai-doubt-manager-workers` |
 
 ## Terraform
 

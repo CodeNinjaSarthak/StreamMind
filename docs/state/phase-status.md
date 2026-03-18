@@ -1,7 +1,7 @@
 # Phase Status
 
 > **LIVING DOCUMENT** — Update this file as phases complete or priorities change.
-> Last updated: 2026-03-01
+> Last updated: 2026-03-18
 
 ## Phase Summary
 
@@ -26,8 +26,8 @@
 **Delivered:**
 - Replaced OpenAI with Google Gemini
 - Classification worker (is_question + confidence_score)
-- Embeddings worker (1536-dim pgvector)
-- Clustering worker (cosine similarity at 0.8)
+- Embeddings worker (768-dim pgvector)
+- Clustering worker (cosine similarity at 0.65)
 - Answer generation worker (RAG + LLM)
 - Human approval flow (is_posted=False by default)
 
@@ -54,12 +54,18 @@
 - Dashboard components: SessionList, YouTubePanel, ManualInput, MetricsCards, QuestionsFeed, ClustersPanel, ActivityLog, AnalyticsPanel
 - useWebSocket hook (exponential backoff, 100-msg cap)
 - Vite proxy: `/api` → `:8000`, `/ws` → ws://`:8000`
+- DocumentUpload component (PDF/DOCX/TXT upload for RAG)
+- QuotaBanner component (YouTube quota alerts)
+- ClusterDetailsModal component
+- KeyboardShortcutsModal (?, N, A, Ctrl+K shortcuts)
+- ThemeContext (dark/light mode with localStorage + cross-tab sync)
+- Dark theme with orange accent (#FF6B35), Azeret Mono + Outfit fonts
+- SettingsPage with ProfileSection, PasswordSection, PreferencesSection
 
 ## Current Stubs / Incomplete Items
 
-<!-- Items started but not finished -->
-- ActivityLog component — purpose unclear, needs population
-- AnalyticsPanel component — purpose unclear, needs population
+- `workers/runner.py` — unimplemented worker orchestrator. Use `./start_dev.sh` instead.
+- `workers/trigger_monitor/worker.py` — empty infinite loop, not started by `start_dev.sh`.
 
 ## Next Priorities
 
