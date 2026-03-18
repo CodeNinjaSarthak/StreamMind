@@ -1,6 +1,7 @@
 """Teacher dashboard API routes."""
 
 import logging
+import re
 from datetime import (
     datetime,
     timezone,
@@ -72,7 +73,7 @@ async def submit_manual_question(
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
-    texts = [t.strip() for t in payload.text.split("\n") if t.strip()]
+    texts = [re.sub(r"<[^>]+>", "", t).strip() for t in payload.text.split("\n") if t.strip()]
     created_count = 0
     manager = QueueManager()
 

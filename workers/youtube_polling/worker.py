@@ -7,6 +7,7 @@ Each thread gets its own DB session and Redis client.
 import json
 import logging
 import os
+import re
 import signal
 import sys
 import time
@@ -58,6 +59,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 5  # seconds between full polling cycles
+
+
+def strip_html_tags(text: str) -> str:
+    """Remove HTML tags from text."""
+    return re.sub(r"<[^>]+>", "", text)
+
+
 _running = True
 _stats = {"polls": 0, "messages": 0, "errors": 0, "last_log": time.time()}
 
@@ -152,9 +160,9 @@ def poll_session(session_id: str, manager: QueueManager) -> None:
                 comment = Comment(
                     session_id=session.id,
                     youtube_comment_id=msg_data["youtube_comment_id"],
-                    author_name=msg_data["author_name"],
+                    author_name=strip_html_tags(msg_data["author_name"]),
                     author_channel_id=msg_data.get("author_channel_id"),
-                    text=msg_data["text"],
+                    text=strip_html_tags(msg_data["text"]),
                     published_at=published_at,
                 )
                 db.add(comment)

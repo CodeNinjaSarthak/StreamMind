@@ -105,8 +105,6 @@ async def oauth_callback(
         )
 
     data = json.loads(state_data_raw)
-    _redis.delete(f"yt_state:{state}")
-    _redis.delete(f"yt_state_teacher:{data['teacher_id']}")
 
     oauth_service = YouTubeOAuthService()
     try:
@@ -141,6 +139,10 @@ async def oauth_callback(
 
     db.commit()
     logger.info(f"YouTube token stored for teacher {teacher_id}")
+
+    # Delete Redis state after successful DB commit — if this fails, keys expire via TTL
+    _redis.delete(f"yt_state:{state}")
+    _redis.delete(f"yt_state_teacher:{data['teacher_id']}")
 
     return HTMLResponse(content=_OAUTH_SUCCESS_HTML)
 

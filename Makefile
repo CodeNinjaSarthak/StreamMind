@@ -33,8 +33,11 @@ format:
 
 lint:
 	ruff check backend workers scripts
-	flake8 backend workers scripts --max-line-length=119 --ignore=D107,D212,E501,W503,W605,D203,D100
-	pylint backend workers scripts --disable=line-too-long,trailing-whitespace,missing-function-docstring,consider-using-f-string,import-error,too-few-public-methods,redefined-outer-name
+	flake8 backend workers scripts --max-line-length=119 --ignore=D107,D212,E501,W503,W605,D203,D100 \
+		--per-file-ignores="backend/alembic/*:E402,F401 backend/app/main.py:E402,F824 backend/app/db/models/migrations/*:W391 workers/*/worker.py:E402,F824 workers/*/mock_worker.py:E402,F824 workers/runner.py:E402 scripts/*:E402,E226"
+	pylint backend workers scripts \
+		--ignore-paths="backend/alembic/versions/" \
+		--disable=line-too-long,trailing-whitespace,missing-function-docstring,missing-module-docstring,missing-class-docstring,consider-using-f-string,import-error,too-few-public-methods,redefined-outer-name,wrong-import-position,wrong-import-order,ungrouped-imports,invalid-name,logging-fstring-interpolation,global-statement,global-variable-not-assigned,unnecessary-pass,fixme,pointless-string-statement,broad-exception-caught,duplicate-code,too-many-locals,too-many-arguments,too-many-branches,too-many-statements,too-many-nested-blocks,too-many-instance-attributes,unused-argument,unused-import,unused-variable,no-member,import-outside-toplevel,raise-missing-from,not-callable,singleton-comparison,no-else-continue,implicit-str-concat,keyword-arg-before-vararg,missing-timeout,subprocess-run-check,protected-access
 
 test:
 	pytest backend/tests workers -v

@@ -97,7 +97,7 @@ def main():
         while time.time() - start < TIMEOUT:
             db.refresh(first_comment)
             if check(first_comment):
-                print(f"  ✓ {name} complete ({time.time()-start:.1f}s)")
+                print(f"  ✓ {name} complete ({time.time() - start:.1f}s)")
                 break
             time.sleep(3)
         else:
